@@ -9,7 +9,7 @@ import re
 
 app = Flask(__name__)
 
-CACHE_FILE = 'cache.txt'
+CACHE_FILE = '/tmp/cache.txt'
 CACHE_EXPIRY = timedelta(days=1)
 
 def request_fii_data(ticker):
