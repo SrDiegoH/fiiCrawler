@@ -33,11 +33,10 @@ def get_data_from_fundamentus_by(ticker):
         'Origin': 'https://fundamentus.com.br/index.php',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 OPR/113.0.0.0'
     }
+
     response = requests.get(url, headers=headers)
 
-    html = response.text
-
-    return html
+    return convert_fundamentus_data(response)
 
 def convert_fundamentus_data(data):
     return {
@@ -82,11 +81,11 @@ def get_data_from_fundsexplorer_by(ticker):
 
     response = request_get(f'https://www.fundsexplorer.com.br/funds/{ticker}', headers)
 
-    fii_as_text = get_substring(response, 'var dataLayer_content =', 'dataLayer.push(')
+    data_as_text = get_substring(response, 'var dataLayer_content =', 'dataLayer.push(')
 
-    fii_as_json = json.loads(fii_as_text.rstrip(';'))['pagePostTerms']['meta']  
+    data_as_json = json.loads(data_as_text.rstrip(';'))['pagePostTerms']['meta']  
 
-    return convert_fund_data(fii_as_json)
+    return convert_fund_data(data_as_json)
 
 def convert_fundsexplorer_data(data):
     return {
@@ -144,25 +143,13 @@ def request_get(url, headers=None):
     return response.text
 
 def get_substring(text, start_text, end_text, should_remove_tags=True):
-    new_text = cut_string_in_begin(text, text.index(start_text))
-    end_index = get_index_of_end_text(new_text, start_text, end_text)
-    cutted_text = cut_string_in_middle(new_text, len(start_text), end_index)
-    return remove_tags(cutted_text, should_remove_tags).strip()
+    start_index = text.find(start_text)
+    new_text = text[start_index:]
 
-def cut_string_in_begin(text, start_index):
-    return text[start_index:]
+    end_index = new_text[len(start_text):].find(end_text) + len(start_text)
+    cutted_text = new_text[len(start_text):end_index].strip().replace('\n', '')
 
-def cut_string_in_middle(text, start_index, end_index):
-    return text[start_index:end_index]
-
-def get_index_of_end_text(text, start_text, end_text):
-    return cut_string_in_begin(text, len(start_text)).index(end_text) + len(start_text)
-
-def remove_tags(text, should_remove_tags):
-    return re.sub(r'<[^>]*>', '', text) if should_remove_tags else text
-
-def equals_ignore_case(text, compare_text):
-    return text.lower() == compare_text.lower()
+    return re.sub(r'<[^>]*>', '', cutted_text) if should_remove_tags else cutted_text
 
 def read_cache(ticker):
     if not os.path.exists(CACHE_FILE):
@@ -179,6 +166,8 @@ def read_cache(ticker):
 
             if datetime.now() - cached_datetime <= CACHE_EXPIRY:
                 return data
+
+            return None
 
     return None
 
@@ -198,7 +187,7 @@ def get_fii_data_by(ticker):
     should_use_cache = request.args.get('should_use_cache', '1').lower() in true_values
     source = request.args.get('source', 'fundamentus').lower()
 
-    if should_clear_cache in true_values:
+    if should_clear_cache:
         clear_cache()
 
     if should_use_cache:
