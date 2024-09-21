@@ -17,10 +17,13 @@ FIIS_SOURCE = 'fiis'
 
 def request_fii_by(ticker, source):
     if source == FUNDSEXPLORER_SOURCE:
+        print("Calling fundsexplorer")
         return get_data_from_fundsexplorer_by(ticker)
     elif source == FIIS_SOURCE:
+        print("Calling fiis")
         return get_data_from_fiis_by(ticker)
 
+    print("Calling fundamentus")
     return get_data_from_fundamentus_by(ticker)
 
 def get_data_from_fundamentus_by(ticker):
@@ -186,16 +189,18 @@ def get_fii_data_by(ticker):
     should_clear_cache = request.args.get('should_clear_cache', '0').lower() in true_values
     should_use_cache = request.args.get('should_use_cache', '1').lower() in true_values
     source = request.args.get('source', 'fundamentus').lower()
-
+    print("---->", should_clear_cache, should_use_cache, source)
     if should_clear_cache:
         clear_cache()
 
     if should_use_cache:
+        print("Using cache")
         cached_data = read_cache(ticker)
 
         if cached_data:
             return jsonify({'data': cached_data, 'source': 'cache'}), 200
 
+    print("NOT using cache")
     data = request_fii_by(ticker, source)
 
     if should_use_cache:
