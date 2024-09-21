@@ -51,7 +51,7 @@ def convert_fundamentus_data(data):
         "liquidezmediadiaria": get_substring(data, 'Vol $ méd (2m)</span>', '</span>'),
         "pvp": get_substring(data, 'P/VP</span>', '</span>'),
         "dy": get_substring(data, 'Div. Yield</span>', '</span>'),
-        "dividendos_12_meses": get_substring(data, 'Rend. Distribuído</span>', '</span>')),
+        "dividendos_12_meses": get_substring(data, 'Rend. Distribuído</span>', '</span>'),
         "lastdividend": get_substring(data, 'Dividendo/cota</span>', '</span>'),
         "patrimonio": get_substring(data, 'Patrim Líquido</span>', '</span>'),
         "valorizacao_12_meses": get_substring(data, '12 meses</span>', '</span>'),
