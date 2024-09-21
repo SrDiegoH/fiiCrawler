@@ -150,9 +150,7 @@ def get_fii_data(ticker):
     if (cached_data := read_cache(ticker)):
         return jsonify({'data': cached_data, 'source': 'cache'}), 200
 
-    data, error = request_fii_data(ticker)
-    if error:
-        return jsonify({'error': error}), 500
+    data = request_fii_data(ticker)
 
     write_to_cache(ticker, data)
     return jsonify({'data': data, 'source': 'fresh'}), 200
