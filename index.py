@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import requests
 from requests import RequestException
 import json
@@ -186,9 +186,9 @@ def clear_cache():
 def get_fii_data_by(ticker):
     true_values = ('true', '1', 't', 'y', 'yes', 's', 'sim')
 
-    should_clear_cache = requests.args.get('should_clear_cache', '0').lower() in true_values
-    should_use_cache = requests.args.get('should_use_cache', '1').lower() in true_values
-    source = requests.args.get('source', 'fundamentus').lower()
+    should_clear_cache = request.args.get('should_clear_cache', '0').lower() in true_values
+    should_use_cache = request.args.get('should_use_cache', '1').lower() in true_values
+    source = request.args.get('source', 'fundamentus').lower()
     print("---->", should_clear_cache, should_use_cache, source)
     if should_clear_cache:
         clear_cache()
