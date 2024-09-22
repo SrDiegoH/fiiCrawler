@@ -90,7 +90,7 @@ def get_data_from_fundsexplorer_by(ticker):
 
     data_as_text = get_substring(response, 'var dataLayer_content =', 'dataLayer.push(')
 
-    data_as_json = json.loads(data_as_text.rstrip(';'))['pagePostTerms']['meta']  
+    data_as_json = json.loads(data_as_text.rstrip(';'))['pagePostTerms']['meta']
 
     return convert_fundsexplorer_data(data_as_json)
 
@@ -159,11 +159,18 @@ def get_substring(text, start_text, end_text, should_remove_tags=True):
     return re.sub(r'<[^>]*>', '', cutted_text) if should_remove_tags else cutted_text
 
 def read_cache(ticker, should_clear_cache):
-    print(f'-----> [read_cache] Reading: {ticker}, {should_clear_cache} - Exists: {os.path.exists(CACHE_FILE)}')
+    print(f'-----> [read_cache] Reading: {ticker}, Clear cache: {should_clear_cache} - Exists file: {os.path.exists(CACHE_FILE)}')
     if not os.path.exists(CACHE_FILE):
-        print(f'-----> [read_cache] File not found')
-        return None
+      print(f'-----> [read_cache] File not found')
+      return None
 
+    if should_clear_cache:
+      print(f'-----> [read_cache] Cleaning cache')
+      clear_cache(ticker)
+      print(f'-----> [read_cache] Cache cleaned')
+      return None
+
+    control_clean_cache = False
     with open(CACHE_FILE, 'r') as cache_file:
         for line in cache_file:
             if not line.startswith(ticker):
@@ -174,23 +181,30 @@ def read_cache(ticker, should_clear_cache):
 
             cached_date = datetime.strptime(cached_datetime, '%Y-%m-%d %H:%M:%S')
 
-            print(f'------> [read_cache] Expiration =>  Now: {datetime.now()}, Cached: {cached_date}, exp: {CACHE_EXPIRY}, Minor: {datetime.now() - cached_date} = {datetime.now() - cached_date > CACHE_EXPIRY}')
-            if datetime.now() - cached_date > CACHE_EXPIRY or should_clear_cache:
-                clear_cache(ticker)
-                return None
+            print(f'------> [read_cache] Expiration =>  Now: {datetime.now()}, Cached: {cached_date}, exp: {CACHE_EXPIRY}, Minor: {datetime.now() - cached_date} = {datetime.now() - cached_date <= CACHE_EXPIRY}')
+            if datetime.now() - cached_date <= CACHE_EXPIRY:
+                print(f'------> [read_cache] Returning data: {cached_ticker}, {cached_datetime}, {data}')
+                return data
 
-            print(f'------> [read_cache] Returning data: {cached_ticker}, {cached_datetime}, {data}')
-            return data
+            control_clean_cache = True
+            break
+
+    if control_clean_cache:
+      print(f'-----> [read_cache] Cleaning cache')
+      clear_cache(ticker)
+      print(f'-----> [read_cache] Cache cleaned')
 
     return None
 
 def clear_cache(ticker):
     print(f'-----> [clear_cache] Clearing: {ticker}')
     with open(CACHE_FILE, 'r') as cache_file:
-        lines_to_keep = [ line for line in cache_file if not line.startswith(ticker) ]
-    print(f'-----> [clear_cache] Lines: {lines_to_keep}')
+        lines = cache_file.readlines()
+    print(f'-----> [clear_cache] Lines: {lines}')
     with open(CACHE_FILE, 'w') as cache_file:
-        cache_file.writelines(lines_to_keep)
+        for line in lines:
+            if not line.startswith(ticker):
+              cache_file.write(line)
     print(f'-----> [clear_cache] Cleared')
 
 def write_to_cache(ticker, data):
@@ -212,7 +226,7 @@ def get_fii_data_by(ticker):
     should_clear_cache = request.args.get('should_clear_cache', '0').lower() in VALID_BOOL_VALUES
     should_use_cache = request.args.get('should_use_cache', '1').lower() in VALID_BOOL_VALUES
 
-    source = request.args.get('source', 'fundamentus').lower()
+    source = request.args.get('source', 'fundsexplorer').lower()
 
     print(f'---> [get_fii_data_by] Start params => Delete cache: {should_delete_cache}, Clear cache: {should_clear_cache}, Use cache: {should_use_cache}, Source: {source}, ticker: {ticker}')
 
