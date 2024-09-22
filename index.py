@@ -137,8 +137,9 @@ def convert_fundsexplorer_data(data):
 
 def get_data_from_all_by(ticker):
     data_fundamentus = get_data_from_fundamentus_by(ticker)
+    print(f'Fundamentus: {data_fundamentus}')
     data_fundsexplorer = get_data_from_fundsexplorer_by(ticker)
-
+    print(f'Fundsexplorer: {data_fundsexplorer}')
     data_merge = {}
 
     for key, value in data_fundamentus.items():
