@@ -52,8 +52,8 @@ def convert_fundamentus_data(data):
     def get_dividends(distributed_dividends, total_quotas):
         return distributed_dividends / total_quotas / 12
 
-    distributed_dividends = float(get_substring(data, 'Rend. Distribuído</span>', '</span>'))
-    total_quotas = float(get_substring(data, 'Nro. Cotas</span>', '</span>'))
+    distributed_dividends = float(get_substring(data, 'Rend. Distribuído</span>', '</span>').replace('.','').replace(',','.'))
+    total_quotas = float(get_substring(data, 'Nro. Cotas</span>', '</span>').replace('.','').replace(',','.'))
 
     return {
         "nome": get_substring(data, 'Nome</span>', '</span>'),
