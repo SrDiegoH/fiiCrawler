@@ -1,11 +1,13 @@
+import http.client as httplib
+import json
+import os
+import re
+from datetime import datetime, timedelta
+
+from bs4 import BeautifulSoup
 from flask import Flask, jsonify, request
 import requests
 from requests import RequestException
-import json
-from datetime import datetime, timedelta
-from bs4 import BeautifulSoup
-import os
-import re
 
 app = Flask(__name__)
 
@@ -90,7 +92,7 @@ def get_data_from_fundsexplorer_by(ticker):
 
     data_as_json = json.loads(data_as_text.rstrip(';'))['pagePostTerms']['meta']  
 
-    return convert_fund_data(data_as_json)
+    return convert_fundsexplorer_data(data_as_json)
 
 def convert_fundsexplorer_data(data):
     return {
@@ -210,7 +212,6 @@ def get_fii_data_by(ticker):
     should_clear_cache = request.args.get('should_clear_cache', '0').lower() in VALID_BOOL_VALUES
     should_use_cache = request.args.get('should_use_cache', '1').lower() in VALID_BOOL_VALUES
 
-    #source = request.args.get('source', 'fundamentus').lower()
     source = request.args.get('source', 'fundsexplorer').lower()
 
     print(f'---> Start params => Delete cache: {should_delete_cache}, Clear cache: {should_clear_cache}, Use cache: {should_use_cache}, Source: {source}')
