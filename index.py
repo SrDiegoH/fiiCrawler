@@ -9,6 +9,8 @@ import re
 
 app = Flask(__name__)
 
+VALID_BOOL_VALUES = ('true', '1', 't', 'y', 'yes', 's', 'sim')
+
 CACHE_FILE = '/tmp/cache.txt'
 CACHE_EXPIRY = timedelta(days=1)
 
@@ -154,8 +156,10 @@ def get_substring(text, start_text, end_text, should_remove_tags=True):
 
     return re.sub(r'<[^>]*>', '', cutted_text) if should_remove_tags else cutted_text
 
-def read_cache(ticker):
+def read_cache(ticker, should_clear_cache):
+    print(f'-----> Reading: {ticker}, {should_clear_cache} - Exists: {os.path.exists(CACHE_FILE)}')
     if not os.path.exists(CACHE_FILE):
+        print(f'-----> File not found')
         return None
 
     with open(CACHE_FILE, 'r') as cache_file:
@@ -163,48 +167,79 @@ def read_cache(ticker):
             if not line.startswith(ticker):
                 continue
 
-            cached_ticker, cached_time, data = line.strip().split('#@#')
+            print(f'------> Ticker found: {line}')
+            cached_ticker, cached_datetime, data = line.strip().split('#@#')
 
-            cached_datetime = datetime.strptime(cached_time, '%Y-%m-%d %H:%M:%S')
+            cached_date = datetime.strptime(cached_datetime, '%Y-%m-%d %H:%M:%S')
 
-            if datetime.now() - cached_datetime <= CACHE_EXPIRY:
-                return data
+            print(f'------> Expiration=>  Now: {datetime.now()}, Cached: {cached_date}, exp: {CACHE_EXPIRY}, Minor: {datetime.now() - cached_date} = {datetime.now() - cached_date > CACHE_EXPIRY}')
+            if datetime.now() - cached_date > CACHE_EXPIRY or should_clear_cache:
+                clear_cache(ticker)
+                return None
 
-            return None
+            print(f'------> Returning data: {cached_ticker}, {cached_datetime}, {data}')
+            return data
 
     return None
 
+def clear_cache(ticker):
+    print(f'-----> Clearing: {ticker}')
+    with open(CACHE_FILE, 'r') as cache_file:
+        lines_to_keep = [ line for line in cache_file if not line.startswith(ticker) ]
+    print(f'-----> Lines: {lines_to_keep}')
+    with open(CACHE_FILE, 'w') as cache_file:
+        cache_file.writelines(lines_to_keep)
+    print(f'-----> Cleared')
+
 def write_to_cache(ticker, data):
+    print(f'-----> Writing: {ticker}, {data}')
     with open(CACHE_FILE, 'a') as cache_file:
         cache_file.write(f"{ticker}#@#{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}#@#{data}\n")
+    print(f'-----> Writed')
 
-def clear_cache():
+def delete_cache():
+    print(f'-----> Deleting: {CACHE_FILE}, {os.path.exists(CACHE_FILE)}')
     if os.path.exists(CACHE_FILE):
+        print(f'------> File found, deleting...')
         os.remove(CACHE_FILE)
+        print(f'------> Deleted')
 
 @app.route('/fii/<ticker>', methods=['GET'])
 def get_fii_data_by(ticker):
-    true_values = ('true', '1', 't', 'y', 'yes', 's', 'sim')
+    should_delete_cache = request.args.get('should_delete_cache', '0').lower() in VALID_BOOL_VALUES
+    should_clear_cache = request.args.get('should_clear_cache', '0').lower() in VALID_BOOL_VALUES
+    should_use_cache = request.args.get('should_use_cache', '1').lower() in VALID_BOOL_VALUES
 
-    should_clear_cache = request.args.get('should_clear_cache', '0').lower() in true_values
-    should_use_cache = request.args.get('should_use_cache', '1').lower() in true_values
-    source = request.args.get('source', 'fundamentus').lower()
-    print("---->", should_clear_cache, should_use_cache, source)
-    if should_clear_cache:
-        clear_cache()
+    #source = request.args.get('source', 'fundamentus').lower()
+    source = request.args.get('source', 'fundsexplorer').lower()
 
-    if should_use_cache:
-        print("Using cache")
-        cached_data = read_cache(ticker)
+    print(f'---> Start params => Delete cache: {should_delete_cache}, Clear cache: {should_clear_cache}, Use cache: {should_use_cache}, Source: {source}')
+
+    if should_delete_cache:
+        delete_cache()
+
+    if should_use_cache and not should_delete_cache:
+        print(f'----> Using cache')
+
+        cached_data = read_cache(ticker, should_clear_cache)
+
+        print(f'----> Found on cache: {cached_data}')
 
         if cached_data:
             return jsonify({'data': cached_data, 'source': 'cache'}), 200
 
-    print("NOT using cache")
+    print(f'---> NOT using cache => Source: {source}')
+
     data = request_fii_by(ticker, source)
 
-    if should_use_cache:
+    print(f'---> Sucess on get data: {data}')
+
+    if should_use_cache and not should_delete_cache and not should_clear_cache:
+        print(f'----> Saving cache')
+
         write_to_cache(ticker, data)
+
+        print(f'----> Saved on cache')
 
     return jsonify({'data': data, 'source': 'fresh'}), 200
 
