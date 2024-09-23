@@ -147,6 +147,12 @@ def get_data_from_all_by(ticker):
     data_fundamentus = get_data_from_fundamentus_by(ticker)
     data_fundsexplorer = get_data_from_fundsexplorer_by(ticker)
 
+    if not data_fundamentus:
+        return data_fundsexplorer
+
+    if not data_fundsexplorer:
+        return data_fundamentus
+
     data_merge = {}
 
     for key, value in data_fundamentus.items():
