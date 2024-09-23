@@ -107,12 +107,9 @@ def get_data_from_fundsexplorer_by(ticker):
 
     response = request_get(f'https://www.fundsexplorer.com.br/funds/{ticker}', headers)
 
-    print('Response fundsexp:', response, 'contains var:', 'dataLayer_content' in response)
-
     data_as_text = get_substring(response, 'var dataLayer_content', 'dataLayer.push')
 
-    print('Response data:', data_as_text)
-    if data_as_text:
+    if not data_as_text:
         return None
 
     data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']['meta']
@@ -175,8 +172,7 @@ def request_get(url, headers=None):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
 
-    #print(f'Response status: {response.status_code}, text: {response.text}')
-    print(f'Response: {response}')
+    #print(f'Response: {response}')
 
     return response.text
 
@@ -203,7 +199,7 @@ def read_cache(ticker, should_clear_cache):
 
     control_clean_cache = False
 
-    print(f'Reading cache')
+    #print(f'Reading cache')
     with open(CACHE_FILE, 'r') as cache_file:
         for line in cache_file:
             if not line.startswith(ticker):
@@ -214,7 +210,7 @@ def read_cache(ticker, should_clear_cache):
             cached_date = datetime.strptime(cached_datetime, '%Y-%m-%d %H:%M:%S')
 
             if datetime.now() - cached_date <= CACHE_EXPIRY:
-                print(f'Finished read')
+                #print(f'Finished read')
                 return data
 
             control_clean_cache = True
@@ -226,7 +222,7 @@ def read_cache(ticker, should_clear_cache):
     return None
 
 def clear_cache(ticker):
-    print(f'Cleaning cache')
+    #print(f'Cleaning cache')
     with open(CACHE_FILE, 'r') as cache_file:
         lines = cache_file.readlines()
 
@@ -234,7 +230,7 @@ def clear_cache(ticker):
         for line in lines:
             if not line.startswith(ticker):
                 cache_file.write(line)
-    print(f'Cleaned')
+   #print(f'Cleaned')
 
 def write_to_cache(ticker, data):
     with open(CACHE_FILE, 'a') as cache_file:
@@ -242,9 +238,9 @@ def write_to_cache(ticker, data):
 
 def delete_cache():
     if os.path.exists(CACHE_FILE):
-        print('Deleting cache')
+        #print('Deleting cache')
         os.remove(CACHE_FILE)
-        print('Deleted')
+        #print('Deleted')
 
 @app.route('/fii/<ticker>', methods=['GET'])
 def get_fii_data_by(ticker):
@@ -254,8 +250,8 @@ def get_fii_data_by(ticker):
 
     source = request.args.get('source', 'all').lower()
 
-    print(f'Delete cache? {should_delete_cache}, Clear cache? {should_clear_cache}, Use cache? {should_use_cache}')
-    print(f'Ticker: {ticker}, Source: {source}')
+    #print(f'Delete cache? {should_delete_cache}, Clear cache? {should_clear_cache}, Use cache? {should_use_cache}')
+    #print(f'Ticker: {ticker}, Source: {source}')
 
     if should_delete_cache:
         delete_cache()
@@ -264,11 +260,11 @@ def get_fii_data_by(ticker):
         cached_data = read_cache(ticker, should_clear_cache)
 
         if cached_data:
-            print(f'From Cache: {cached_data}')
+            #print(f'Data from Cache: {cached_data}')
             return jsonify({'data': cached_data, 'source': 'cache'}), 200
 
     data = request_fii_by(ticker, source)
-    print(f'From Source: {data}')
+    #print(f'Data from Source: {data}')
 
     if should_use_cache and not should_delete_cache and not should_clear_cache:
         write_to_cache(ticker, data)
