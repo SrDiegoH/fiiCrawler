@@ -50,7 +50,10 @@ def convert_fundamentus_data(data):
         return f'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo={cnpj}#'
 
     def get_dividends(distributed_dividends, total_quotas):
-        return distributed_dividends / total_quotas / 12
+        try:
+            return distributed_dividends / total_quotas / 12
+        except:
+            return None
 
     distributed_dividends_as_text = get_substring(data, 'Rend. Distribuído</span>', '</span>')
     distributed_dividends = float(get_substring(data, 'Rend. Distribuído</span>', '</span>').replace('.', '').replace(',', '.')) if distributed_dividends_as_text else 0
@@ -75,7 +78,7 @@ def convert_fundamentus_data(data):
         'pvp': get_substring(data, 'P/VP</span>', '</span>'),
         'ffoy': get_substring(data, 'FFO Yield</span>', '</span>'),
         'dy': get_substring(data, 'Div. Yield</span>', '</span>'),
-        'dividendos_12_meses': None,
+        'dividendos_12_meses': get_dividends(distributed_dividends, total_quotas),
         'ultimo_dividendo': get_substring(data, 'Dividendo/cota</span>', '</span>'),
         'valorizacao_12_meses': get_substring(data, '12 meses</span>', '</span>'),
         'valorizacao_ultimo_mes': get_substring(data, 'Mês</span>', '</span>'),
@@ -107,7 +110,7 @@ def get_data_from_fundsexplorer_by(ticker):
 
     if data_as_text:
         return None
-
+    print(data_as_text)
     data_as_json = json.loads(data_as_text.rstrip(';'))['pagePostTerms']['meta']
 
     return convert_fundsexplorer_data(data_as_json)
