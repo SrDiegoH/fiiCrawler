@@ -16,17 +16,17 @@ VALID_BOOL_VALUES = ('true', '1', 't', 'y', 'yes', 's', 'sim')
 CACHE_FILE = '/tmp/cache.txt'
 CACHE_EXPIRY = timedelta(days=1)
 
-FUNDSEXPLORER_SOURCE = 'fundsexplorer'
 FIIS_SOURCE = 'fiis'
 FUNDAMENTUS_SOURCE = 'fundamentus'
+FUNDSEXPLORER_SOURCE = 'fundsexplorer'
 
 def request_fii_by(ticker, source):
-    if source == FUNDSEXPLORER_SOURCE:
-        return get_data_from_fundsexplorer_by(ticker)
-    elif source == FIIS_SOURCE:
+    if source == FIIS_SOURCE:
         return get_data_from_fiis_by(ticker)
     elif source == FUNDAMENTUS_SOURCE:
         return get_data_from_fundamentus_by(ticker)
+    elif source == FUNDSEXPLORER_SOURCE:
+        return get_data_from_fundsexplorer_by(ticker)
 
     return get_data_from_all_by(ticker)
 
@@ -47,7 +47,7 @@ def get_data_from_fundamentus_by(ticker):
 
 def convert_fundamentus_data(data):
     def generate_link(cnpj):
-        return f'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo={cnpj}#'
+        return f'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo={cnpj}'
 
     def get_dividends(distributed_dividends, total_quotas):
         try:
