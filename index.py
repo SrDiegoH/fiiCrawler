@@ -158,12 +158,12 @@ def get_data_from_all_by(ticker):
 
 def request_get(url, headers=None):
     response = requests.get(url, headers=headers)
-
     response.raise_for_status()
 
-    print(f'Response status: {response.status_code}, text: {response.text}')
+    #print(f'Response status: {response.status_code}, text: {response.text}')
+    print(f'Response: {response}')
 
-    return response.status_code, response.text
+    return response.text
 
 def get_substring(text, start_text, end_text, should_remove_tags=True):
     start_index = text.find(start_text)
