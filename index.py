@@ -52,8 +52,11 @@ def convert_fundamentus_data(data):
     def get_dividends(distributed_dividends, total_quotas):
         return distributed_dividends / total_quotas / 12
 
-    distributed_dividends = float(get_substring(data, 'Rend. Distribuído</span>', '</span>').replace('.', '').replace(',', '.'))
-    total_quotas = float(get_substring(data, 'Nro. Cotas</span>', '</span>').replace('.', '').replace(',', '.'))
+    distributed_dividends_as_text = get_substring(data, 'Rend. Distribuído</span>', '</span>')
+    distributed_dividends = float(get_substring(data, 'Rend. Distribuído</span>', '</span>').replace('.', '').replace(',', '.')) if distributed_dividends_as_text else 0
+
+    total_quotas_as_text = get_substring(data, 'Nro. Cotas</span>', '</span>')
+    total_quotas = float(get_substring(data, 'Nro. Cotas</span>', '</span>').replace(',', '').replace(',', '.')) if total_quotas_as_text else 0
 
     return {
         'nome': get_substring(data, 'Nome</span>', '</span>'),
@@ -99,6 +102,9 @@ def get_data_from_fundsexplorer_by(ticker):
     response = request_get(f'https://www.fundsexplorer.com.br/funds/{ticker}', headers)
 
     data_as_text = get_substring(response, 'var dataLayer_content =', 'dataLayer.push(')
+
+    if data_as_text:
+        return None
 
     data_as_json = json.loads(data_as_text.rstrip(';'))['pagePostTerms']['meta']
 
@@ -161,9 +167,13 @@ def get_substring(text, start_text, end_text, should_remove_tags=True):
     new_text = text[start_index:]
 
     end_index = new_text[len(start_text):].find(end_text) + len(start_text)
-    cutted_text = new_text[len(start_text):end_index].strip().replace('\n', '')
+    cutted_text = new_text[len(start_text):end_index]
 
-    return re.sub(r'<[^>]*>', '', cutted_text) if should_remove_tags else cutted_text
+    if not cutted_text:        
+        return None
+
+    final_text = cutted_text.strip().replace('\n', '')
+    return re.sub(r'<[^>]*>', '', final_text) if should_remove_tags else final_text
 
 def read_cache(ticker, should_clear_cache):
     if not os.path.exists(CACHE_FILE):
