@@ -107,14 +107,15 @@ def get_data_from_fundsexplorer_by(ticker):
 
     response = request_get(f'https://www.fundsexplorer.com.br/funds/{ticker}', headers)
 
-    print(response)
+    print('Response fundsexp:', response, 'contains var:', 'dataLayer_content' in response)
 
-    data_as_text = get_substring(response, 'var dataLayer_content =', 'dataLayer.push(')
+    data_as_text = get_substring(response, 'var dataLayer_content', 'dataLayer.push')
 
+    print('Response data:', data_as_text)
     if data_as_text:
         return None
 
-    data_as_json = json.loads(data_as_text.rstrip(';'))['pagePostTerms']['meta']
+    data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']['meta']
 
     return convert_fundsexplorer_data(data_as_json)
 
