@@ -79,7 +79,7 @@ def convert_fundamentus_data(data):
         'pvp': textToNumber(get_substring(data, 'P/VP</span>', '</span>')),
         'ffoy': textToNumber(get_substring(data, 'FFO Yield</span>', '</span>')),
         'dy': textToNumber(get_substring(data, 'Div. Yield</span>', '</span>')),
-        'dividendos_12_meses': get_dividends(distributed_dividends, total_quotas),
+        'dividendos_12_meses': None, #get_dividends(distributed_dividends, total_quotas),
         'ultimo_dividendo': textToNumber(get_substring(data, 'Dividendo/cota</span>', '</span>')),
         'valorizacao_12_meses': textToNumber(get_substring(data, '12 meses</span>', '</span>')),
         'valorizacao_ultimo_mes': textToNumber(get_substring(data, 'Mês</span>', '</span>')),
