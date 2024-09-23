@@ -49,15 +49,6 @@ def convert_fundamentus_data(data):
     def generate_link(cnpj):
         return f'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo={cnpj}#'
 
-    def get_dividends(distributed_dividends, total_quotas):
-        return distributed_dividends / total_quotas / 12
-
-    distributed_dividends_as_text = get_substring(data, 'Rend. Distribuído</span>', '</span>')
-    distributed_dividends = float(get_substring(data, 'Rend. Distribuído</span>', '</span>').replace('.', '').replace(',', '.')) if distributed_dividends_as_text else 0
-
-    total_quotas_as_text = get_substring(data, 'Nro. Cotas</span>', '</span>')
-    total_quotas = float(get_substring(data, 'Nro. Cotas</span>', '</span>').replace('.', '').replace(',', '.')) if total_quotas_as_text else 0
-
     cash = get_substring(data, 'Caixa\'', '}', False)
 
     return {
@@ -75,7 +66,7 @@ def convert_fundamentus_data(data):
         'pvp': get_substring(data, 'P/VP</span>', '</span>'),
         'ffoy': get_substring(data, 'FFO Yield</span>', '</span>'),
         'dy': get_substring(data, 'Div. Yield</span>', '</span>'),
-        'dividendos_12_meses': get_dividends(distributed_dividends, total_quotas),
+        'dividendos_12_meses': None,
         'ultimo_dividendo': get_substring(data, 'Dividendo/cota</span>', '</span>'),
         'valorizacao_12_meses': get_substring(data, '12 meses</span>', '</span>'),
         'valorizacao_ultimo_mes': get_substring(data, 'Mês</span>', '</span>'),
@@ -84,7 +75,7 @@ def convert_fundamentus_data(data):
         'qnt_imoveis': get_substring(data, 'Qtd imóveis</span>', '</span>'),
         'taxas': None,
         'vacancia': get_substring(data, 'Vacância Média</span>', '</span>'),
-        'total_cotas_emitidas': total_quotas,
+        'total_cotas_emitidas': get_substring(data, 'Nro. Cotas</span>', '</span>'),
         'data_inicio': None,
         'publico_alvo': None,
         'prazo': None,
