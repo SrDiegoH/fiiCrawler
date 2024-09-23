@@ -63,7 +63,7 @@ def convert_fundamentus_data(data):
 
     cash = get_substring(data, 'Caixa\'', '}', False)
     vacancy = get_substring(data, 'Vacância Média</span>', '</span>')
-    name = get_substring(data, 'Nome</span>', '</span>').replace("FUNDO DE INVESTIMENTO IMOBILIÁRIO -")
+    name = get_substring(data, 'Nome</span>', '</span>').replace('FUNDO DE INVESTIMENTO IMOBILIÁRIO -', '')
 
     return {
         'nome': get_substring(data, 'Nome</span>', '</span>'),
