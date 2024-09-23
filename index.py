@@ -62,6 +62,7 @@ def convert_fundamentus_data(data):
     total_quotas = float(get_substring(data, 'Nro. Cotas</span>', '</span>').replace('.', '').replace(',', '.')) if total_quotas_as_text else 0
 
     cash = get_substring(data, 'Caixa\'', '}', False)
+    vacancy = get_substring(data, 'Vacância Média</span>', '</span>')
 
     return {
         'nome': get_substring(data, 'Nome</span>', '</span>'),
@@ -69,7 +70,7 @@ def convert_fundamentus_data(data):
         'tipo': None,
         'segmento': get_substring(data, 'Mandato</span>', '</span>'),
         'atuacao': None,
-        'valor_caixa': get_substring(cash, '[', ']', False) if cash else '',
+        'valor_caixa': get_substring(cash, '[', ']', False) if cash else None,
         'valor_ativos': get_substring(data, '>Ativos</span>', '</span>'),
         'valor_mercado': get_substring(data, 'Valor de mercado</span>', '</span>'),
         'valor_patrimonio_liquido': get_substring(data, 'Patrim Líquido</span>', '</span>'),
@@ -86,7 +87,7 @@ def convert_fundamentus_data(data):
         'max_52_semanas': get_substring(data, 'Max 52 sem</span>', '</span>'),
         'qnt_imoveis': get_substring(data, 'Qtd imóveis</span>', '</span>'),
         'taxas': None,
-        'vacancia': get_substring(data, 'Vacância Média</span>', '</span>'),
+        'vacancia': vacancy.replace('-', '') if vacancy else None,
         'total_cotas_emitidas': get_substring(data, 'Nro. Cotas</span>', '</span>'),
         'data_inicio': None,
         'publico_alvo': None,
