@@ -58,13 +58,15 @@ def convert_fundamentus_data(data):
     total_quotas_as_text = get_substring(data, 'Nro. Cotas</span>', '</span>')
     total_quotas = float(get_substring(data, 'Nro. Cotas</span>', '</span>').replace('.', '').replace(',', '.')) if total_quotas_as_text else 0
 
+    cash = get_substring(data, 'Caixa\'', '}', False)
+
     return {
         'nome': get_substring(data, 'Nome</span>', '</span>'),
         'gestao': get_substring(data, 'Gestão</span>', '</span>'),
         'tipo': None,
         'segmento': get_substring(data, 'Mandato</span>', '</span>'),
         'atuacao': None,
-        'valor_caixa': get_substring(get_substring(data, 'Caixa\',', '}', False), '[', ']', False),
+        'valor_caixa': get_substring(cash, '[', ']', False) if cash else '',
         'valor_ativos': get_substring(data, '>Ativos</span>', '</span>'),
         'valor_mercado': get_substring(data, 'Valor de mercado</span>', '</span>'),
         'valor_patrimonio_liquido': get_substring(data, 'Patrim Líquido</span>', '</span>'),
