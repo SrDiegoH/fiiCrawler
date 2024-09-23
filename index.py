@@ -49,6 +49,15 @@ def convert_fundamentus_data(data):
     def generate_link(cnpj):
         return f'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo={cnpj}#'
 
+    def get_dividends(distributed_dividends, total_quotas):
+        return distributed_dividends / total_quotas / 12
+
+    distributed_dividends_as_text = get_substring(data, 'Rend. Distribuído</span>', '</span>')
+    distributed_dividends = float(get_substring(data, 'Rend. Distribuído</span>', '</span>').replace('.', '').replace(',', '.')) if distributed_dividends_as_text else 0
+
+    total_quotas_as_text = get_substring(data, 'Nro. Cotas</span>', '</span>')
+    total_quotas = float(get_substring(data, 'Nro. Cotas</span>', '</span>').replace('.', '').replace(',', '.')) if total_quotas_as_text else 0
+
     cash = get_substring(data, 'Caixa\'', '}', False)
 
     return {
