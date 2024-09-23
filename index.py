@@ -52,38 +52,38 @@ def convert_fundamentus_data(data):
     def get_dividends(distributed_dividends, total_quotas):
         return distributed_dividends / total_quotas / 12
 
-    distributed_dividends = float(get_substring(data, 'Rend. Distribuído</span>', '</span>').replace('.','').replace(',','.'))
-    total_quotas = float(get_substring(data, 'Nro. Cotas</span>', '</span>').replace('.','').replace(',','.'))
+    distributed_dividends = float(get_substring(data, 'Rend. Distribuído</span>', '</span>').replace('.', '').replace(',', '.'))
+    total_quotas = float(get_substring(data, 'Nro. Cotas</span>', '</span>').replace('.', '').replace(',', '.'))
 
     return {
-        "nome": get_substring(data, 'Nome</span>', '</span>'),
-        "gestao": get_substring(data, 'Gestão</span>', '</span>'),
-        "tipo": None,
-        "segmento": get_substring(data, 'Mandato</span>', '</span>'),
-        "atuacao": None,
-        "valor_caixa": get_substring(get_substring(data, 'Caixa\',', '}', False), '[', ']', False),
-        "valor_ativos": get_substring(data, '>Ativos</span>', '</span>'),
-        "valor_mercado": get_substring(data, 'Valor de mercado</span>', '</span>'),
-        "valor_patrimonio_liquido": get_substring(data, 'Patrim Líquido</span>', '</span>'),
-        "valor_cotacao": get_substring(data, 'Cotação</span>', '</span>'),
-        "liquidez": get_substring(data, 'Vol $ méd (2m)</span>', '</span>'),
-        "pvp": get_substring(data, 'P/VP</span>', '</span>'),
-        "ffoy": get_substring(data, 'FFO Yield</span>', '</span>'),
-        "dy": get_substring(data, 'Div. Yield</span>', '</span>'),
-        "dividendos_12_meses": get_dividends(distributed_dividends, total_quotas),
-        "ultimo_dividendo": get_substring(data, 'Dividendo/cota</span>', '</span>'),
-        "valorizacao_12_meses": get_substring(data, '12 meses</span>', '</span>'),
-        "valorizacao_ultimo_mes": get_substring(data, 'Mês</span>', '</span>'),
-        "min_52_semanas": get_substring(data, 'Min 52 sem</span>', '</span>'),
-        "max_52_semanas": get_substring(data, 'Max 52 sem</span>', '</span>'),
-        "qnt_imoveis": get_substring(data, 'Qtd imóveis</span>', '</span>'),
-        "taxas": None,
-        "vacancia": get_substring(data, 'Vacância Média</span>', '</span>'),
-        "total_cotas_emitidas": total_quotas,
-        "data_inicio": None,
-        "publico_alvo": None,
-        "prazo": None,
-        "link": generate_link(get_substring(data, 'abrirGerenciadorDocumentosCVM?cnpjFundo=', '">Pesquisar Documentos', False))
+        'nome': get_substring(data, 'Nome</span>', '</span>'),
+        'gestao': get_substring(data, 'Gestão</span>', '</span>'),
+        'tipo': None,
+        'segmento': get_substring(data, 'Mandato</span>', '</span>'),
+        'atuacao': None,
+        'valor_caixa': get_substring(get_substring(data, 'Caixa\',', '}', False), '[', ']', False),
+        'valor_ativos': get_substring(data, '>Ativos</span>', '</span>'),
+        'valor_mercado': get_substring(data, 'Valor de mercado</span>', '</span>'),
+        'valor_patrimonio_liquido': get_substring(data, 'Patrim Líquido</span>', '</span>'),
+        'valor_cotacao': get_substring(data, 'Cotação</span>', '</span>'),
+        'liquidez': get_substring(data, 'Vol $ méd (2m)</span>', '</span>'),
+        'pvp': get_substring(data, 'P/VP</span>', '</span>'),
+        'ffoy': get_substring(data, 'FFO Yield</span>', '</span>'),
+        'dy': get_substring(data, 'Div. Yield</span>', '</span>'),
+        'dividendos_12_meses': get_dividends(distributed_dividends, total_quotas),
+        'ultimo_dividendo': get_substring(data, 'Dividendo/cota</span>', '</span>'),
+        'valorizacao_12_meses': get_substring(data, '12 meses</span>', '</span>'),
+        'valorizacao_ultimo_mes': get_substring(data, 'Mês</span>', '</span>'),
+        'min_52_semanas': get_substring(data, 'Min 52 sem</span>', '</span>'),
+        'max_52_semanas': get_substring(data, 'Max 52 sem</span>', '</span>'),
+        'qnt_imoveis': get_substring(data, 'Qtd imóveis</span>', '</span>'),
+        'taxas': None,
+        'vacancia': get_substring(data, 'Vacância Média</span>', '</span>'),
+        'total_cotas_emitidas': total_quotas,
+        'data_inicio': None,
+        'publico_alvo': None,
+        'prazo': None,
+        'link': generate_link(get_substring(data, 'abrirGerenciadorDocumentosCVM?cnpjFundo=', '">Pesquisar Documentos', False))
     }
 
 def get_data_from_fundsexplorer_by(ticker):
@@ -106,33 +106,33 @@ def get_data_from_fundsexplorer_by(ticker):
 
 def convert_fundsexplorer_data(data):
     return {
-        "nome": data["name"],
-        "gestao": data["gestao"],
-        "tipo": data["setor_atuacao"],
-        "segmento": data["segmento_ambima"],
-        "atuacao": data["segmento_atuacao"],
-        "valor_caixa": data["valor_caixa"],
-        "valor_mercado": data["valormercado"],
-        "valor_patrimonio_liquido": data["patrimonio"],
-        "valor_cotacao": data["valor"],
-        "liquidez": data["liquidezmediadiaria"],
-        "pvp": data["pvp"],
-        "ffoy": None,
-        "dy": data["dy"],
-        "dividendos_12_meses": data["dividendos_12_meses"],
-        "ultimo_dividendo": data["lastdividend"],
-        "valorizacao_12_meses": data["valorizacao_12_meses"],
-        "valorizacao_ultimo_mes": data["valorizacao_mes"],
-        "min_52_semanas": data["min_52_semanas"],
-        "max_52_semanas": data["max_52_semanas"],
-        "qnt_imoveis": data["assets_number"],
-        "taxas": data["taxas"],
-        "vacancia": data["vacancia"],
-        "total_cotas_emitidas": data["numero_cotas"],
-        "data_inicio": data["firstdate"],
-        "publico_alvo": data["publicoalvo"],
-        "prazo": data["prazoduracao"],
-        "link": None
+        'nome': data['name'],
+        'gestao': data['gestao'],
+        'tipo': data['setor_atuacao'],
+        'segmento': data['segmento_ambima'],
+        'atuacao': data['segmento_atuacao'],
+        'valor_caixa': data['valor_caixa'],
+        'valor_mercado': data['valormercado'],
+        'valor_patrimonio_liquido': data['patrimonio'],
+        'valor_cotacao': data['valor'],
+        'liquidez': data['liquidezmediadiaria'],
+        'pvp': data['pvp'],
+        'ffoy': None,
+        'dy': data['dy'],
+        'dividendos_12_meses': data['dividendos_12_meses'],
+        'ultimo_dividendo': data['lastdividend'],
+        'valorizacao_12_meses': data['valorizacao_12_meses'],
+        'valorizacao_ultimo_mes': data['valorizacao_mes'],
+        'min_52_semanas': data['min_52_semanas'],
+        'max_52_semanas': data['max_52_semanas'],
+        'qnt_imoveis': data['assets_number'],
+        'taxas': data['taxas'],
+        'vacancia': data['vacancia'],
+        'total_cotas_emitidas': data['numero_cotas'],
+        'data_inicio': data['firstdate'],
+        'publico_alvo': data['publicoalvo'],
+        'prazo': data['prazoduracao'],
+        'link': None
     }
 
 def get_data_from_all_by(ticker):
@@ -204,7 +204,7 @@ def clear_cache(ticker):
 
 def write_to_cache(ticker, data):
     with open(CACHE_FILE, 'a') as cache_file:
-        cache_file.write(f"{ticker}#@#{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}#@#{data}\n")
+        cache_file.write(f'{ticker}#@#{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}#@#{data}\n')
 
 def delete_cache():
     if os.path.exists(CACHE_FILE):
