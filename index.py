@@ -107,7 +107,7 @@ def get_data_from_fundsexplorer_by(ticker):
 
     response = request_get(f'https://www.fundsexplorer.com.br/funds/{ticker}', headers)
 
-    print(data_as_text)
+    print(response)
 
     data_as_text = get_substring(response, 'var dataLayer_content =', 'dataLayer.push(')
 
