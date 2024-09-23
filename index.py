@@ -213,7 +213,7 @@ def read_cache(ticker, should_clear_cache):
 
             if datetime.now() - cached_date <= CACHE_EXPIRY:
                 #print(f'Finished read')
-                return data
+                return json.loads(data)
 
             control_clean_cache = True
             break
