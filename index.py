@@ -71,24 +71,24 @@ def convert_fundamentus_data(data):
         'segmento': get_substring(data, 'Mandato</span>', '</span>'),
         'atuacao': None,
         'valor_caixa': get_substring(cash, '[', ']', False) if cash else None,
-        'valor_ativos': get_substring(data, '>Ativos</span>', '</span>'),
-        'valor_mercado': get_substring(data, 'Valor de mercado</span>', '</span>'),
-        'valor_patrimonio_liquido': get_substring(data, 'Patrim Líquido</span>', '</span>'),
-        'valor_cotacao': get_substring(data, 'Cotação</span>', '</span>'),
-        'liquidez': get_substring(data, 'Vol $ méd (2m)</span>', '</span>'),
-        'pvp': get_substring(data, 'P/VP</span>', '</span>'),
-        'ffoy': get_substring(data, 'FFO Yield</span>', '</span>'),
-        'dy': get_substring(data, 'Div. Yield</span>', '</span>'),
+        'valor_ativos': textToNumber(get_substring(data, '>Ativos</span>', '</span>')),
+        'valor_mercado': textToNumber(get_substring(data, 'Valor de mercado</span>', '</span>')),
+        'valor_patrimonio_liquido': textToNumber(get_substring(data, 'Patrim Líquido</span>', '</span>')),
+        'valor_cotacao': textToNumber(get_substring(data, 'Cotação</span>', '</span>')),
+        'liquidez': textToNumber(get_substring(data, 'Vol $ méd (2m)</span>', '</span>')),
+        'pvp': textToNumber(get_substring(data, 'P/VP</span>', '</span>')),
+        'ffoy': textToNumber(get_substring(data, 'FFO Yield</span>', '</span>')),
+        'dy': textToNumber(get_substring(data, 'Div. Yield</span>', '</span>')),
         'dividendos_12_meses': get_dividends(distributed_dividends, total_quotas),
-        'ultimo_dividendo': get_substring(data, 'Dividendo/cota</span>', '</span>'),
-        'valorizacao_12_meses': get_substring(data, '12 meses</span>', '</span>'),
-        'valorizacao_ultimo_mes': get_substring(data, 'Mês</span>', '</span>'),
-        'min_52_semanas': get_substring(data, 'Min 52 sem</span>', '</span>'),
-        'max_52_semanas': get_substring(data, 'Max 52 sem</span>', '</span>'),
-        'qnt_imoveis': get_substring(data, 'Qtd imóveis</span>', '</span>'),
+        'ultimo_dividendo': textToNumber(get_substring(data, 'Dividendo/cota</span>', '</span>')),
+        'valorizacao_12_meses': textToNumber(get_substring(data, '12 meses</span>', '</span>')),
+        'valorizacao_ultimo_mes': textToNumber(get_substring(data, 'Mês</span>', '</span>')),
+        'min_52_semanas': textToNumber(get_substring(data, 'Min 52 sem</span>', '</span>')),
+        'max_52_semanas': textToNumber(get_substring(data, 'Max 52 sem</span>', '</span>')),
+        'qnt_imoveis': textToNumber(get_substring(data, 'Qtd imóveis</span>', '</span>')),
         'taxas': None,
-        'vacancia': vacancy.replace('-', '') if vacancy else None,
-        'total_cotas_emitidas': get_substring(data, 'Nro. Cotas</span>', '</span>'),
+        'vacancia': textToNumber(vacancy.replace('-', '')) if vacancy else None,
+        'total_cotas_emitidas': textToNumber(get_substring(data, 'Nro. Cotas</span>', '</span>')),
         'data_inicio': None,
         'publico_alvo': None,
         'prazo': None,
@@ -189,6 +189,9 @@ def get_substring(text, start_text, end_text, should_remove_tags=True):
     final_text = cutted_text.strip().replace('\n', '')
     return re.sub(r'<[^>]*>', '', final_text) if should_remove_tags else final_text
 
+def textToNumber(text):
+    return float(text.replace('%', '').replace('.','').replace(',','.')) if text else text
+    
 def read_cache(ticker, should_clear_cache):
     if not os.path.exists(CACHE_FILE):
         return None
