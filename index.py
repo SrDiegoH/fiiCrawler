@@ -1,5 +1,6 @@
 import http.client as httplib
 import json
+import logging
 import os
 import re
 from datetime import datetime, timedelta
@@ -10,6 +11,8 @@ import requests
 from requests import RequestException
 
 app = Flask(__name__)
+
+logger = logging.getLogger()
 
 VALID_BOOL_VALUES = ('true', '1', 't', 'y', 'yes', 's', 'sim')
 
@@ -170,7 +173,7 @@ def request_get(url, headers=None):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
 
-    #print(f'Response: {response}')
+    #logger.info(f'Response: {response}')
 
     return response.text
 
@@ -181,7 +184,7 @@ def get_substring(text, start_text, end_text, should_remove_tags=True):
     end_index = new_text[len(start_text):].find(end_text) + len(start_text)
     cutted_text = new_text[len(start_text):end_index]
 
-    if not cutted_text:        
+    if not cutted_text:
         return None
 
     final_text = cutted_text.strip().replace('\n', '')
@@ -200,18 +203,18 @@ def read_cache(ticker, should_clear_cache):
 
     control_clean_cache = False
 
-    #print(f'Reading cache')
+    #logger.info(f'Reading cache')
     with open(CACHE_FILE, 'r') as cache_file:
         for line in cache_file:
             if not line.startswith(ticker):
                 continue
 
-            cached_ticker, cached_datetime, data = line.strip().split('#@#')
+            _, cached_datetime, data = line.strip().split('#@#')
 
             cached_date = datetime.strptime(cached_datetime, '%Y-%m-%d %H:%M:%S')
 
             if datetime.now() - cached_date <= CACHE_EXPIRY:
-                #print(f'Finished read')
+                #logger.info(f'Finished read')
                 return json.loads(data.replace("'", '"'))
 
             control_clean_cache = True
@@ -223,7 +226,7 @@ def read_cache(ticker, should_clear_cache):
     return None
 
 def clear_cache(ticker):
-    #print(f'Cleaning cache')
+    #logger.info(f'Cleaning cache')
     with open(CACHE_FILE, 'r') as cache_file:
         lines = cache_file.readlines()
 
@@ -231,7 +234,7 @@ def clear_cache(ticker):
         for line in lines:
             if not line.startswith(ticker):
                 cache_file.write(line)
-   #print(f'Cleaned')
+   #logger.info(f'Cleaned')
 
 def write_to_cache(ticker, data):
     with open(CACHE_FILE, 'a') as cache_file:
@@ -239,9 +242,9 @@ def write_to_cache(ticker, data):
 
 def delete_cache():
     if os.path.exists(CACHE_FILE):
-        #print('Deleting cache')
+        #logger.info('Deleting cache')
         os.remove(CACHE_FILE)
-        #print('Deleted')
+        #logger.info('Deleted')
 
 @app.route('/fii/<ticker>', methods=['GET'])
 def get_fii_data_by(ticker):
@@ -251,8 +254,8 @@ def get_fii_data_by(ticker):
 
     source = request.args.get('source', 'all').lower()
 
-    #print(f'Delete cache? {should_delete_cache}, Clear cache? {should_clear_cache}, Use cache? {should_use_cache}')
-    #print(f'Ticker: {ticker}, Source: {source}')
+    #logger.info(f'Delete cache? {should_delete_cache}, Clear cache? {should_clear_cache}, Use cache? {should_use_cache}')
+    #logger.info(f'Ticker: {ticker}, Source: {source}')
 
     if should_delete_cache:
         delete_cache()
@@ -261,11 +264,11 @@ def get_fii_data_by(ticker):
         cached_data = read_cache(ticker, should_clear_cache)
 
         if cached_data:
-            #print(f'Data from Cache: {cached_data}')
+            #logger.info(f'Data from Cache: {cached_data}')
             return jsonify({'data': cached_data, 'source': 'cache'}), 200
 
     data = request_fii_by(ticker, source)
-    #print(f'Data from Source: {data}')
+    #logger.info(f'Data from Source: {data}')
 
     if should_use_cache and not should_delete_cache and not should_clear_cache:
         write_to_cache(ticker, data)
