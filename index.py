@@ -91,7 +91,8 @@ def convert_fundamentus_data(data):
         'data_inicio': None,
         'publico_alvo': None,
         'prazo': None,
-        'link': generate_link(get_substring(data, 'abrirGerenciadorDocumentosCVM?cnpjFundo=', '">Pesquisar Documentos', False))
+        'link': generate_link(get_substring(data, 'abrirGerenciadorDocumentosCVM?cnpjFundo=', '">Pesquisar Documentos', False)),
+        'vp_cota': textToNumber(get_substring(data, 'VP/Cota</span>', '</span>')),
     }
 
 def get_data_from_fundsexplorer_by(ticker):
@@ -188,7 +189,10 @@ def get_substring(text, start_text, end_text, should_remove_tags=True):
     return re.sub(r'<[^>]*>', '', final_text) if should_remove_tags else final_text
 
 def textToNumber(text):
-    return float(text.replace('%', '').replace('.','').replace(',','.')) if text else text
+    try:
+        return float(text.replace('%', '').replace('.','').replace(',','.')) if text else text
+    except:
+        return text
     
 def read_cache(ticker, should_clear_cache):
     if not os.path.exists(CACHE_FILE):
