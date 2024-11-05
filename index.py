@@ -49,18 +49,6 @@ def convert_fundamentus_data(data):
     def generate_link(cnpj):
         return f'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo={cnpj}'
 
-    def get_dividends(distributed_dividends, total_quotas):
-        try:
-            return distributed_dividends / total_quotas / 12
-        except:
-            return None
-
-    distributed_dividends_as_text = get_substring(data, 'Rend. Distribuído</span>', '</span>')
-    distributed_dividends = float(get_substring(data, 'Rend. Distribuído</span>', '</span>').replace('.', '').replace(',', '.')) if distributed_dividends_as_text else 0
-
-    total_quotas_as_text = get_substring(data, 'Nro. Cotas</span>', '</span>')
-    total_quotas = float(get_substring(data, 'Nro. Cotas</span>', '</span>').replace('.', '').replace(',', '.')) if total_quotas_as_text else 0
-
     cash = get_substring(data, 'Caixa\'', '}', False)
     vacancy = get_substring(data, 'Vacância Média</span>', '</span>')
 
@@ -79,7 +67,7 @@ def convert_fundamentus_data(data):
         'pvp': textToNumber(get_substring(data, 'P/VP</span>', '</span>')),
         'ffoy': textToNumber(get_substring(data, 'FFO Yield</span>', '</span>')),
         'dy': textToNumber(get_substring(data, 'Div. Yield</span>', '</span>')),
-        'dividendos_12_meses': None, #get_dividends(distributed_dividends, total_quotas),
+        'dividendos_12_meses': None,
         'ultimo_dividendo': textToNumber(get_substring(data, 'Dividendo/cota</span>', '</span>')),
         'valorizacao_12_meses': textToNumber(get_substring(data, '12 meses</span>', '</span>')),
         'valorizacao_ultimo_mes': textToNumber(get_substring(data, 'Mês</span>', '</span>')),
@@ -143,7 +131,8 @@ def convert_fundsexplorer_data(data):
         'data_inicio': data['firstdate'],
         'publico_alvo': data['publicoalvo'],
         'prazo': data['prazoduracao'],
-        'link': None
+        'link': None,
+        'vp_cota': data['valorpatrimonialcota']
     }
 
 def get_data_from_all_by(ticker):
@@ -185,7 +174,7 @@ def get_substring(text, start_text, end_text, should_remove_tags=True):
     if not cutted_text:
         return None
 
-    final_text = cutted_text.strip().replace('\n', '')
+    final_text = cutted_text.replace('\n', '').replace('\t', '').strip()
     return re.sub(r'<[^>]*>', '', final_text) if should_remove_tags else final_text
 
 def textToNumber(text):
