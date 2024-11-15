@@ -10,6 +10,7 @@ import requests
 from requests import RequestException
 
 app = Flask(__name__)
+app.json.sort_keys = False
 
 VALID_BOOL_VALUES = ('true', '1', 't', 'y', 'yes', 's', 'sim')
 
