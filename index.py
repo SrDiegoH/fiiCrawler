@@ -190,11 +190,11 @@ def textToNumber(text):
     
 def read_cache(ticker, should_clear_cache):
     if not os.path.exists(CACHE_FILE):
-        return None
+        return None, None
 
     if should_clear_cache:
         clear_cache(ticker)
-        return None
+        return None, None
 
     control_clean_cache = False
 
@@ -210,7 +210,7 @@ def read_cache(ticker, should_clear_cache):
 
             if datetime.now() - cached_date <= CACHE_EXPIRY:
                 #print(f'Finished read')
-                return json.loads(data.replace("'", '"'))
+                return json.loads(data.replace("'", '"')), cached_date
 
             control_clean_cache = True
             break
@@ -218,7 +218,7 @@ def read_cache(ticker, should_clear_cache):
     if control_clean_cache:
         clear_cache(ticker)
 
-    return None
+    return None, None
 
 def clear_cache(ticker):
     #print(f'Cleaning cache')
@@ -256,11 +256,11 @@ def get_fii_data_by(ticker):
         delete_cache()
 
     if should_use_cache and not should_delete_cache:
-        cached_data = read_cache(ticker, should_clear_cache)
+        cached_data , cache_date = read_cache(ticker, should_clear_cache)
 
         if cached_data:
             #print(f'Data from Cache: {cached_data}')
-            return jsonify({'data': cached_data, 'source': 'cache'}), 200
+            return jsonify({'data': cached_data, 'source': 'cache', 'date': cache_date.strftime("%d/%m/%Y, %H:%M")}), 200
 
     data = request_fii_by(ticker, source)
     #print(f'Data from Source: {data}')
@@ -268,7 +268,7 @@ def get_fii_data_by(ticker):
     if should_use_cache and not should_delete_cache and not should_clear_cache:
         write_to_cache(ticker, data)
 
-    return jsonify({'data': data, 'source': 'fresh'}), 200
+    return jsonify({'data': data, 'source': 'fresh', 'date': datetime.now().strftime("%d/%m/%Y, %H:%M")}), 200
 
 if __name__ == '__main__':
     is_debug = os.getenv('IS_DEBUG', False)
