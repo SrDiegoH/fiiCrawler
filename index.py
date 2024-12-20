@@ -12,7 +12,7 @@ from requests import RequestException
 app = Flask(__name__)
 app.json.sort_keys = False
 
-VALID_BOOL_VALUES = ('true', '1', 't', 'y', 'yes', 's', 'sim')
+TRUE_BOOL_VALUES = ('true', '1', 't', 'y', 'yes', 's', 'sim')
 
 CACHE_FILE = '/tmp/cache.txt'
 CACHE_EXPIRY = timedelta(days=1)
@@ -22,9 +22,7 @@ FUNDAMENTUS_SOURCE = 'fundamentus'
 FUNDSEXPLORER_SOURCE = 'fundsexplorer'
 
 def request_fii_by(ticker, source):
-    if source == FIIS_SOURCE:
-        return get_data_from_fiis_by(ticker)
-    elif source == FUNDAMENTUS_SOURCE:
+    if source == FUNDAMENTUS_SOURCE:
         return get_data_from_fundamentus_by(ticker)
     elif source == FUNDSEXPLORER_SOURCE:
         return get_data_from_fundsexplorer_by(ticker)
@@ -32,21 +30,27 @@ def request_fii_by(ticker, source):
     return get_data_from_all_by(ticker)
 
 def get_data_from_fundamentus_by(ticker):
-    url = f'https://fundamentus.com.br/detalhes.php?papel={ticker}'
-
-    headers = {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Referer': 'https://fundamentus.com.br/index.php',
-        'Origin': 'https://fundamentus.com.br/index.php',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 OPR/113.0.0.0'
-    }
-
-    response = request_get(url, headers)
-
-    return convert_fundamentus_data(response)
+    try:
+        url = f'https://fundamentus.com.br/detalhes.php?papel={ticker}'
+    
+        headers = {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Referer': 'https://fundamentus.com.br/index.php',
+            'Origin': 'https://fundamentus.com.br/index.php',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 OPR/113.0.0.0'
+        }
+    
+        response = request_get(url, headers)
+    
+        return convert_fundamentus_data(response)
+    except:
+        return None
 
 def convert_fundamentus_data(data):
+    if not data:
+        return None
+
     def generate_link(cnpj):
         return f'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo={cnpj}'
 
@@ -60,52 +64,58 @@ def convert_fundamentus_data(data):
         'segmento': get_substring(data, 'Mandato</span>', '</span>'),
         'atuacao': None,
         'valor_caixa': get_substring(cash, '[', ']', False) if cash else None,
-        'valor_ativos': textToNumber(get_substring(data, '>Ativos</span>', '</span>')),
-        'valor_mercado': textToNumber(get_substring(data, 'Valor de mercado</span>', '</span>')),
-        'valor_patrimonio_liquido': textToNumber(get_substring(data, 'Patrim Líquido</span>', '</span>')),
-        'valor_cotacao': textToNumber(get_substring(data, 'Cotação</span>', '</span>')),
-        'liquidez': textToNumber(get_substring(data, 'Vol $ méd (2m)</span>', '</span>')),
-        'pvp': textToNumber(get_substring(data, 'P/VP</span>', '</span>')),
-        'ffoy': textToNumber(get_substring(data, 'FFO Yield</span>', '</span>')),
-        'dy': textToNumber(get_substring(data, 'Div. Yield</span>', '</span>')),
+        'valor_ativos': text_to_number(get_substring(data, '>Ativos</span>', '</span>')),
+        'valor_mercado': text_to_number(get_substring(data, 'Valor de mercado</span>', '</span>')),
+        'valor_patrimonio_liquido': text_to_number(get_substring(data, 'Patrim Líquido</span>', '</span>')),
+        'valor_cotacao': text_to_number(get_substring(data, 'Cotação</span>', '</span>')),
+        'liquidez': text_to_number(get_substring(data, 'Vol $ méd (2m)</span>', '</span>')),
+        'pvp': text_to_number(get_substring(data, 'P/VP</span>', '</span>')),
+        'ffoy': text_to_number(get_substring(data, 'FFO Yield</span>', '</span>')),
+        'dy': text_to_number(get_substring(data, 'Div. Yield</span>', '</span>')),
         'dividendos_12_meses': None,
-        'ultimo_dividendo': textToNumber(get_substring(data, 'Dividendo/cota</span>', '</span>')),
-        'valorizacao_12_meses': textToNumber(get_substring(data, '12 meses</span>', '</span>')),
-        'valorizacao_ultimo_mes': textToNumber(get_substring(data, 'Mês</span>', '</span>')),
-        'min_52_semanas': textToNumber(get_substring(data, 'Min 52 sem</span>', '</span>')),
-        'max_52_semanas': textToNumber(get_substring(data, 'Max 52 sem</span>', '</span>')),
-        'qnt_imoveis': textToNumber(get_substring(data, 'Qtd imóveis</span>', '</span>')),
-        'vacancia': textToNumber(vacancy.replace('-', '')) if vacancy else None,
-        'total_cotas_emitidas': textToNumber(get_substring(data, 'Nro. Cotas</span>', '</span>')),
+        'ultimo_dividendo': text_to_number(get_substring(data, 'Dividendo/cota</span>', '</span>')),
+        'valorizacao_12_meses': text_to_number(get_substring(data, '12 meses</span>', '</span>')),
+        'valorizacao_ultimo_mes': text_to_number(get_substring(data, 'Mês</span>', '</span>')),
+        'min_52_semanas': text_to_number(get_substring(data, 'Min 52 sem</span>', '</span>')),
+        'max_52_semanas': text_to_number(get_substring(data, 'Max 52 sem</span>', '</span>')),
+        'qnt_imoveis': text_to_number(get_substring(data, 'Qtd imóveis</span>', '</span>')),
+        'vacancia': text_to_number(vacancy.replace('-', '')) if vacancy else None,
+        'total_cotas_emitidas': text_to_number(get_substring(data, 'Nro. Cotas</span>', '</span>')),
         'data_inicio': None,
         'publico_alvo': None,
         'prazo': None,
         'link': generate_link(get_substring(data, 'abrirGerenciadorDocumentosCVM?cnpjFundo=', '">Pesquisar Documentos', False)),
-        'vp_cota': textToNumber(get_substring(data, 'VP/Cota</span>', '</span>'))
+        'vp_cota': text_to_number(get_substring(data, 'VP/Cota</span>', '</span>'))
     }
 
 def get_data_from_fundsexplorer_by(ticker):
-    headers = {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-        'DNT': '1',
-        'Priority': 'u=0, i',
-        'Upgrade-Insecure-Requests': '1',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 OPR/112.0.0.0'
-    }
-
-    response = request_get(f'https://www.fundsexplorer.com.br/funds/{ticker}', headers)
-
-    data_as_text = get_substring(response, 'var dataLayer_content', 'dataLayer.push')
-
-    if not data_as_text:
+    try:
+        headers = {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+            'DNT': '1',
+            'Priority': 'u=0, i',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 OPR/112.0.0.0'
+        }
+    
+        response = request_get(f'https://www.fundsexplorer.com.br/funds/{ticker}', headers)
+    
+        data_as_text = get_substring(response, 'var dataLayer_content', 'dataLayer.push')
+    
+        if not data_as_text:
+            return None
+    
+        data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']['meta']
+    
+        return convert_fundsexplorer_data(data_as_json)
+    except:
         return None
 
-    data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']['meta']
-
-    return convert_fundsexplorer_data(data_as_json)
-
 def convert_fundsexplorer_data(data):
+    if not data:
+        return None
+
     return {
         'nome': data['name'],
         'gestao': data['gestao'],
@@ -165,7 +175,7 @@ def request_get(url, headers=None):
 
     return response.text
 
-def get_substring(text, start_text, end_text, should_remove_tags=True):
+def get_substring(text, start_text, end_text, should_remove_tags=True, replace_by_paterns=[]):
     start_index = text.find(start_text)
     new_text = text[start_index:]
 
@@ -175,19 +185,33 @@ def get_substring(text, start_text, end_text, should_remove_tags=True):
     if not cutted_text:
         return None
 
-    final_text = cutted_text.replace('\n', '').replace('\t', '').strip()
-    return re.sub(r'<[^>]*>', '', final_text) if should_remove_tags else final_text
+    clean_text = cutted_text.replace('\n', '').replace('\t', '')
 
-def textToNumber(text):
+    no_tags_text = re.sub(r'<[^>]*>', '', clean_text) if should_remove_tags else clean_text
+
+    final_text = no_tags_text
+    for pattern in replace_by_paterns:
+        final_text = final_text.replace(pattern, '')
+
+    return final_text.strip()
+
+def text_to_number(text, should_convert_thousand_decimal_separators=True, convert_percent_to_decimal=False):
     if not text:
-        return text
-
-    value = text.replace('%', '').replace('.','').replace(',','.').strip()
+        return 0
 
     try:
-        return float(value)
+        if not isinstance(text, str):
+            return text
+
+        if should_convert_thousand_decimal_separators:
+            text = text.replace('.','').replace(',','.')
+
+        if '%' in text:
+            return float(text.replace('%', '').strip()) / (100 if convert_percent_to_decimal else 1)
+
+        return float(text.strip())
     except:
-        return value
+        return 0
     
 def read_cache(ticker, should_clear_cache):
     if not os.path.exists(CACHE_FILE):
@@ -244,9 +268,9 @@ def delete_cache():
 
 @app.route('/fii/<ticker>', methods=['GET'])
 def get_fii_data_by(ticker):
-    should_delete_cache = request.args.get('should_delete_cache', '0').lower() in VALID_BOOL_VALUES
-    should_clear_cache = request.args.get('should_clear_cache', '0').lower() in VALID_BOOL_VALUES
-    should_use_cache = request.args.get('should_use_cache', '1').lower() in VALID_BOOL_VALUES
+    should_delete_cache = request.args.get('should_delete_cache', '0').lower() in TRUE_BOOL_VALUES
+    should_clear_cache = request.args.get('should_clear_cache', '0').lower() in TRUE_BOOL_VALUES
+    should_use_cache = request.args.get('should_use_cache', '1').lower() in TRUE_BOOL_VALUES
 
     source = request.args.get('source', 'all').lower()
 
