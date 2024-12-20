@@ -1,2 +1,2 @@
 # fiiCrawler
-Go to sites about FIIs and get some infos
+Go to sites about FIIs (brazilians reits) and get some infos
