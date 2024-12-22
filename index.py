@@ -194,10 +194,10 @@ def get_data_from_fundamentus_by(ticker):
         response = request_get(url, headers)
         html_page = response.text
     
-        print(f"Converted Fundamentus data: {convert_fundamentus_data(html_page)}")
+        #print(f"Converted Fundamentus data: {convert_fundamentus_data(html_page)}")
         return convert_fundamentus_data(html_page)
     except:
-        print(f"Error on get Fundamentus data: {repr(error)}")
+        #print(f"Error on get Fundamentus data: {repr(error)}")
         return None
 
 def convert_fundsexplorer_data(data):
@@ -250,11 +250,11 @@ def get_data_from_fundsexplorer_by(ticker):
     
         data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']['meta']
 
-        print(f"Converted Fundsexplorer data: {convert_fundsexplorer_data(data_as_json)}")
+        #print(f"Converted Fundsexplorer data: {convert_fundsexplorer_data(data_as_json)}")
 
         return convert_fundsexplorer_data(data_as_json)
     except Exception as error:
-        print(f"Error on get Fundsexplorer data: {repr(error)}")
+        #print(f"Error on get Fundsexplorer data: {repr(error)}")
         return None
 
 def get_data_from_all_by(ticker):
