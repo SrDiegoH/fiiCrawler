@@ -192,7 +192,7 @@ def get_data_from_fundamentus_by(ticker):
         }
     
         response = request_get(url, headers)
-        html_page = response.txt
+        html_page = response.text
     
         print(f"Converted Fundamentus data: {convert_fundamentus_data(html_page)}")
         return convert_fundamentus_data(html_page)
@@ -244,7 +244,7 @@ def get_data_from_fundsexplorer_by(ticker):
         }
     
         response = request_get(f'https://www.fundsexplorer.com.br/funds/{ticker}', headers)
-        html_page = response.txt
+        html_page = response.text
     
         data_as_text = get_substring(html_page, 'var dataLayer_content', 'dataLayer.push')
     
