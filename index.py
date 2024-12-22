@@ -194,6 +194,8 @@ def get_data_from_fundamentus_by(ticker):
         response = request_get(url, headers)
         html_page = response.txt
     
+
+        print(f"Converted Fundamentus Data: {convert_fundamentus_data(html_page)}")
         return convert_fundamentus_data(html_page)
     except:
         return None
@@ -248,6 +250,8 @@ def get_data_from_fundsexplorer_by(ticker):
     
         data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']['meta']
     
+    
+        print(f"Converted Fundsexplorer Data: {convert_fundsexplorer_data(data_as_json)}")
         return convert_fundsexplorer_data(data_as_json)
     except:
         return None
@@ -255,9 +259,6 @@ def get_data_from_fundsexplorer_by(ticker):
 def get_data_from_all_by(ticker):
     data_fundamentus = get_data_from_fundamentus_by(ticker)
     data_fundsexplorer = get_data_from_fundsexplorer_by(ticker)
-
-    print(f"Converted Fundamentus Data: {data_fundamentus}")
-    print(f"Converted Fundsexplorer Data: {data_fundsexplorer}")
 
     if not data_fundamentus:
         return data_fundsexplorer
