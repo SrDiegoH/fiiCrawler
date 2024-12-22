@@ -67,6 +67,9 @@ def text_to_number(text, should_convert_thousand_decimal_separators=True, conver
         if '%' in text:
             return float(text.replace('%', '').strip()) / (100 if convert_percent_to_decimal else 1)
 
+        if 'R$' in text:
+            text = text.replace('R$', '')
+
         return float(text.strip())
     except:
         return 0
@@ -197,7 +200,7 @@ def get_data_from_fundamentus_by(ticker):
         #print(f"Converted Fundamentus data: {convert_fundamentus_data(html_page)}")
         return convert_fundamentus_data(html_page)
     except:
-        #print(f"Error on get Fundamentus data: {repr(error)}")
+        #print(f"Error on get Fundamentus data: {traceback.format_exc()}")
         return None
 
 def convert_fundsexplorer_data(data):
@@ -254,7 +257,7 @@ def get_data_from_fundsexplorer_by(ticker):
 
         return convert_fundsexplorer_data(data_as_json)
     except Exception as error:
-        #print(f"Error on get Fundsexplorer data: {repr(error)}")
+        #print(f"Error on get Fundsexplorer data: {traceback.format_exc()}")
         return None
 
 def get_data_from_all_by(ticker):
