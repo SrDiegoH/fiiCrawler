@@ -256,8 +256,8 @@ def get_data_from_all_by(ticker):
     data_fundamentus = get_data_from_fundamentus_by(ticker)
     data_fundsexplorer = get_data_from_fundsexplorer_by(ticker)
 
-    #print(f"Converted Fundamentus Data: {data_fundamentus}")
-    #print(f"Converted Fundsexplorer Data: {data_fundsexplorer}")
+    print(f"Converted Fundamentus Data: {data_fundamentus}")
+    print(f"Converted Fundsexplorer Data: {data_fundsexplorer}")
 
     if not data_fundamentus:
         return data_fundsexplorer
