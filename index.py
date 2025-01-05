@@ -19,6 +19,7 @@ CACHE_EXPIRY = timedelta(days=1)
 
 FUNDAMENTUS_SOURCE = 'fundamentus'
 FUNDSEXPLORER_SOURCE = 'fundsexplorer'
+INVESTIDOR10_SOURCE = 'investidor10'
 
 def request_get(url, headers=None):
     response = requests.get(url, headers=headers)
@@ -260,21 +261,110 @@ def get_data_from_fundsexplorer_by(ticker):
         #print(f"Error on get Fundsexplorer data: {traceback.format_exc()}")
         return None
 
+def convert_investidor10_data(data):
+    patterns_to_remove = [
+        '<div>',
+        '</div>',
+        '<div class="_card-body">',
+        '<div class="value">',
+        '<span>',
+        #'<div class="value d-flex justify-content-between align-items-center"',
+        #'style="margin-top: 10px; width: 100%; padding-right: 0px">'
+    ]
+
+    def multiply_by_unit(data):
+        value = text_to_number(data.replace('k|K|Mil|m|M|Milhões', ''))
+
+        if 'k' in data or 'K' in data or 'Mil' in data:
+            return value * 1000
+        elif 'm' in data or 'M' in data or 'Milhões' in data:
+            return value * 1000000
+
+        return value
+
+    def count_repetitions(data, pattern):
+        count = 0
+        index = -1
+        
+        while True:
+            index = data.find(pattern, indice +1)
+
+            if index == -1:
+                break
+
+            count += 1
+
+        return count
+
+    return {
+        'name':  get_substring(data, 'Razão Social', '<div class="cell">', patterns_to_remove),
+        'type': get_substring(data, 'TIPO DE FUNDO', '<div class="cell">', patterns_to_remove),
+        'segment': get_substring(data, 'SEGMENTO', '<div class="cell">', patterns_to_remove),
+        'actuation': None,
+        'link': None,
+        'price': text_to_number(get_substring(data, 'Cotação</span>', '</span>', patterns_to_remove)),
+        'liquidity': multiply_by_unit(get_substring(data, 'title="Liquidez Diária">Liquidez Diária</span>', '</span>', patterns_to_remove)),
+        'total_issued_shares': text_to_number(get_substring(data, 'COTAS EMITIDAS', '<div class="cell">', patterns_to_remove)),
+        'net_equity_value': multiply_by_unit(get_substring(data, 'VALOR PATRIMONIAL', '<div class="cell">', patterns_to_remove)),
+        'equity_price': text_to_number(get_substring(data, 'VAL. PATRIMONIAL P/ COTA', '<div class="cell">', patterns_to_remove)),
+        'variation_12M': text_to_number(get_substring(data, 'title="Variação (12M)">VARIAÇÃO (12M)</span>', '</span>', patterns_to_remove)),
+        'variation_30D': None,
+        'min_52_weeks': None,
+        'max_52_weeks': None,
+        'PVP': text_to_number(get_substring(data, 'title="P/VP">P/VP</span>', '</span>', patterns_to_remove)),
+        'DY':  text_to_number(get_substring(data, 'DY (12M)</span>', '</span>', patterns_to_remove)),
+        'latests_dividends': text_to_number(get_substring(get_substring(data, 'YIELD 6 MESES', '<div class="content--info--item">', patterns_to_remove)), 'content--info--item--value amount">', '</span>'),
+        'latest_dividend': text_to_number(get_substring(data, 'ÚLTIMO RENDIMENTO', '</span>', patterns_to_remove)),
+        'ffoy': None,
+        'vacancy': text_to_number(get_substring(data, 'VACÂNCIA', '<div class="cell">', patterns_to_remove)),
+        'total_real_state': get_substring(data, 'Lista de Imóveis', '<button data-id="read-more-action"').lower().split().count('card-propertie"'.lower()),
+        'management': get_substring(data, 'TIPO DE GESTÃO', '<div class="cell">', patterns_to_remove),
+        'cash_value': None,
+        'assets_value': None,
+        'market_value': None,
+        'initial_date': None,
+        'target_public': get_substring(data, 'PÚBLICO-ALVO', '<div class="cell">', patterns_to_remove),
+        'term': get_substring(data, 'PRAZO DE DURAÇÃO', '<div class="cell">', patterns_to_remove)
+    }
+
+def get_data_from_investidor10_by(ticker):
+    try:
+        headers = {
+            'accept': '*/*',
+            'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+            'referer': 'https://investidor10.com.br/acoes/cmig4/',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 OPR/114.0.0.0',
+        }
+    
+        response = request_get(f'https://investidor10.com.br/fiis/{ticker}', headers)
+        html_page = response.text[15898:]
+    
+        #print(f"Converted Investidor 10 data: {convert_investidor10_data(html_page)}")
+        return convert_investidor10_data(html_page)
+    except Exception as error:
+        #print(f"Error on get Fundsexplorer data: {traceback.format_exc()}")
+        return None
+
 def get_data_from_all_by(ticker):
     data_fundamentus = get_data_from_fundamentus_by(ticker)
     data_fundsexplorer = get_data_from_fundsexplorer_by(ticker)
+    data_investidor10 = get_data_from_investidor10_by(ticker)
 
     if not data_fundamentus:
         return data_fundsexplorer
 
     if not data_fundsexplorer:
-        return data_fundamentus
+        return data_investidor10
 
     data_merge = {}
 
     for key, value in data_fundamentus.items():
         if key in data_fundsexplorer and not value:
-            data_merge[key] = data_fundsexplorer[key]
+            if data_fundsexplorer[key]:
+                data_merge[key] = data_fundsexplorer[key]
+            elif data_investidor10[key]:
+                data_merge[key] = data_investidor10[key]
+
             continue
 
         data_merge[key] = value
@@ -286,6 +376,8 @@ def request_shares_by(ticker, source):
         return get_data_from_fundamentus_by(ticker)
     elif source == FUNDSEXPLORER_SOURCE:
         return get_data_from_fundsexplorer_by(ticker)
+    elif source == INVESTIDOR10_SOURCE:
+        return get_data_from_investidor10_by(ticker)
 
     return get_data_from_all_by(ticker)
 
