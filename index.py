@@ -40,13 +40,13 @@ def get_substring(text, start_text, end_text, replace_by_paterns=[], should_remo
         return None
 
     clean_text = cutted_text.replace('\n', '').replace('\t', '')
-    print('------>', clean_text)
+
     no_tags_text = re.sub(r'<[^>]*>', '', clean_text) if should_remove_tags else clean_text
 
     final_text = no_tags_text
     for pattern in replace_by_paterns:
         final_text = final_text.replace(pattern, '')
-
+    print('------>', clean_text, '#@#', final_text)
     return final_text.strip()
 
 def text_to_number(text, should_convert_thousand_decimal_separators=True, convert_percent_to_decimal=False):
@@ -263,11 +263,12 @@ def get_data_from_fundsexplorer_by(ticker):
 
 def convert_investidor10_data(data):
     patterns_to_remove = [
-        '<div>',
         '</div>',
-        '<div class="_card-body">',
+        '<div>',
         '<div class="value">',
+        '<div class="_card-body">',
         '<span>',
+        '<span class="value">'
         #'<div class="value d-flex justify-content-between align-items-center"',
         #'style="margin-top: 10px; width: 100%; padding-right: 0px">'
     ]
