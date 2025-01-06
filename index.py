@@ -277,16 +277,14 @@ def convert_investidor10_data(data):
         if not data:
             return None
 
-        value = text_to_number(data.replace('K', '').replace('Milhões', '').replace('M', ''))
-
         if 'K' in data:
-            return value * 1000
+            return text_to_number(data.replace('K', '')) * 1000
         elif 'M' in data or 'Milhões' in data:
-            return value * 1000000
+            return text_to_number(data.replace('Milhões', '').replace('M', '')) * 1000000
 
-        return value
+        return text_to_number(data)
 
-    count_pattern_on_text = lambda text, pattern: None if not text or not pattern else text.lower().split().count(pattern.lower())
+    count_pattern_on_text = lambda text, pattern: None if not text or not pattern else len(text.split(pattern))
 
     return {
         'name':  get_substring(data, 'Razão Social', '<div class=\'cell\'>', patterns_to_remove),
