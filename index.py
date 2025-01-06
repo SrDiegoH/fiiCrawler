@@ -274,16 +274,14 @@ def convert_investidor10_data(data):
     ]
 
     def multiply_by_unit(data):
-        print('--->', data)
         if not data:
             return None
 
-        value = text_to_number(data.replace('k|K|Mil|m|M|Milhões', ''))
+        value = text_to_number(data.replace('K', '').replace('Milhões', '').replace('M', ''))
 
-        print('--->', value)
-        if 'k' in data or 'K' in data or 'Mil' in data:
+        if 'K' in data:
             return value * 1000
-        elif 'm' in data or 'M' in data or 'Milhões' in data:
+        elif 'M' in data or 'Milhões' in data:
             return value * 1000000
 
         return value
