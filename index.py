@@ -40,7 +40,7 @@ def get_substring(text, start_text, end_text, replace_by_paterns=[], should_remo
         return None
 
     clean_text = cutted_text.replace('\n', '').replace('\t', '')
-
+    print('------>', clean_text)
     no_tags_text = re.sub(r'<[^>]*>', '', clean_text) if should_remove_tags else clean_text
 
     final_text = no_tags_text
@@ -352,18 +352,16 @@ def get_data_from_investidor10_by(ticker):
         response = request_get(f'https://investidor10.com.br/fiis/{ticker}', headers)
         html_page = response.text#[15898:]
     
-        print(f"Converted Investidor 10 data: {convert_investidor10_data(html_page)}")
+        #print(f"Converted Investidor 10 data: {convert_investidor10_data(html_page)}")
         return convert_investidor10_data(html_page)
     except Exception as error:
-        print(f"Error on get Fundsexplorer data: {traceback.format_exc()}")
+        #print(f"Error on get Fundsexplorer data: {traceback.format_exc()}")
         return None
 
 def get_data_from_all_by(ticker):
     data_fundamentus = get_data_from_fundamentus_by(ticker)
     data_fundsexplorer = get_data_from_fundsexplorer_by(ticker)
-    print(f'Call investidor 10: {ticker}')
     data_investidor10 = get_data_from_investidor10_by(ticker)
-    print(f'Called investidor 10: {data_investidor10}')
 
     if not data_fundamentus:
         return data_fundsexplorer
@@ -375,17 +373,17 @@ def get_data_from_all_by(ticker):
 
     for key, value in data_fundamentus.items():
         if not value:
-            print(f'Key: {key}')
+            #print(f'Key: {key}')
             if key in data_fundsexplorer and data_fundsexplorer[key]:
-                print(f'Found data on Fundsexplorer: {data_fundsexplorer[key]}')
+               # print(f'Found data on Fundsexplorer: {data_fundsexplorer[key]}')
                 data_merge[key] = data_fundsexplorer[key]
             elif key in data_investidor10 and data_investidor10[key]:
-                print(f'Found data on Investidor 10: {data_investidor10[key]}')
+                #print(f'Found data on Investidor 10: {data_investidor10[key]}')
                 data_merge[key] = data_investidor10[key]
 
             continue
 
-        print(f'using Fundamentus data: {value}')
+        #print(f'Using Fundamentus data: {value}')
         data_merge[key] = value
 
     return data_merge
