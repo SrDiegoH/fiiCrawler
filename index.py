@@ -302,6 +302,12 @@ def convert_investidor10_data(data):
 
         return count
 
+    def count_pattern_on_text(text, pattern):
+        if not text or not pattern:
+            return None
+
+        return text.lower().split().count(pattern.lower())
+
     return {
         'name':  get_substring(data, 'Razão Social', '<div class="cell">', patterns_to_remove),
         'type': get_substring(data, 'TIPO DE FUNDO', '<div class="cell">', patterns_to_remove),
@@ -323,7 +329,7 @@ def convert_investidor10_data(data):
         'latest_dividend': text_to_number(get_substring(data, 'ÚLTIMO RENDIMENTO', '</span>', patterns_to_remove)),
         'ffoy': None,
         'vacancy': text_to_number(get_substring(data, 'VACÂNCIA', '<div class="cell">', patterns_to_remove)),
-        'total_real_state': get_substring(data, 'Lista de Imóveis', '<button data-id="read-more-action"').lower().split().count('card-propertie"'.lower()),
+        'total_real_state': count_pattern_on_text(get_substring(data, 'Lista de Imóveis', '<button data-id="read-more-action'), 'card-propertie'),
         'management': get_substring(data, 'TIPO DE GESTÃO', '<div class="cell">', patterns_to_remove),
         'cash_value': None,
         'assets_value': None,
