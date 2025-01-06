@@ -37,6 +37,7 @@ def get_substring(text, start_text, end_text, replace_by_paterns=[], should_remo
     cutted_text = new_text[len(start_text):end_index]
 
     if not cutted_text:
+        print('------>Not fount for ', start_text)
         return None
 
     clean_text = cutted_text.replace('\n', '').replace('\t', '')
@@ -46,7 +47,7 @@ def get_substring(text, start_text, end_text, replace_by_paterns=[], should_remo
     final_text = no_tags_text
     for pattern in replace_by_paterns:
         final_text = final_text.replace(pattern, '')
-    print('------>', clean_text, '#@#', final_text)
+    print('------>', start_text, '#@#', clean_text, '#@#', final_text)
     return final_text.strip()
 
 def text_to_number(text, should_convert_thousand_decimal_separators=True, convert_percent_to_decimal=False):
