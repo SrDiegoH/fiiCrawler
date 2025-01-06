@@ -279,7 +279,7 @@ def convert_investidor10_data(data):
 
         if 'K' in data:
             return text_to_number(data.replace('K', '')) * 1000
-        elif 'M' in data or 'Milhões' in data:
+        elif 'M' in data:
             return text_to_number(data.replace('Milhões', '').replace('M', '')) * 1000000
 
         return text_to_number(data)
@@ -307,7 +307,7 @@ def convert_investidor10_data(data):
         'latest_dividend': text_to_number(get_substring(data, 'ÚLTIMO RENDIMENTO', '</span>', patterns_to_remove)),
         'ffoy': None,
         'vacancy': text_to_number(get_substring(data, 'VACÂNCIA', '<div class=\'cell\'>', patterns_to_remove)),
-        'total_real_state': count_pattern_on_text(get_substring(data, 'Lista de Imóveis', '<button data-id="read-more-action'), 'card-propertie'),
+        'total_real_state': count_pattern_on_text(get_substring(data, 'Lista de Imóveis', '</section>'), 'card-propertie'),
         'management': get_substring(data, 'TIPO DE GESTÃO', '<div class=\'cell\'>', patterns_to_remove),
         'cash_value': None,
         'assets_value': None,
