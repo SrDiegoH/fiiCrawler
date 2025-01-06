@@ -269,10 +269,9 @@ def convert_investidor10_data(data):
         '<div>',
         '<div class="value">',
         '<div class="_card-body">',
+        '</span>',
         '<span>',
         '<span class="value">'
-        #'<div class="value d-flex justify-content-between align-items-center"',
-        #'style="margin-top: 10px; width: 100%; padding-right: 0px">'
     ]
 
     def multiply_by_unit(data):
@@ -312,16 +311,16 @@ def convert_investidor10_data(data):
         return text.lower().split().count(pattern.lower())
 
     return {
-        'name':  get_substring(data, 'Razão Social', '<div class="cell">', patterns_to_remove),
-        'type': get_substring(data, 'TIPO DE FUNDO', '<div class="cell">', patterns_to_remove),
-        'segment': get_substring(data, 'SEGMENTO', '<div class="cell">', patterns_to_remove),
+        'name':  get_substring(data, 'Razão Social', '<div class=\'cell\'>', patterns_to_remove),
+        'type': get_substring(data, 'TIPO DE FUNDO', '<div class=\'cell\'>', patterns_to_remove),
+        'segment': get_substring(data, 'SEGMENTO', '<div class=\'cell\'>', patterns_to_remove),
         'actuation': None,
         'link': None,
         'price': text_to_number(get_substring(data, 'Cotação</span>', '</span>', patterns_to_remove)),
         'liquidity': multiply_by_unit(get_substring(data, 'title="Liquidez Diária">Liquidez Diária</span>', '</span>', patterns_to_remove)),
-        'total_issued_shares': text_to_number(get_substring(data, 'COTAS EMITIDAS', '<div class="cell">', patterns_to_remove)),
-        'net_equity_value': multiply_by_unit(get_substring(data, 'VALOR PATRIMONIAL', '<div class="cell">', patterns_to_remove)),
-        'equity_price': text_to_number(get_substring(data, 'VAL. PATRIMONIAL P/ COTA', '<div class="cell">', patterns_to_remove)),
+        'total_issued_shares': text_to_number(get_substring(data, 'COTAS EMITIDAS', '<div class=\'cell\'>', patterns_to_remove)),
+        'net_equity_value': multiply_by_unit(get_substring(data, 'VALOR PATRIMONIAL', '<div class=\'cell\'>', patterns_to_remove)),
+        'equity_price': text_to_number(get_substring(data, 'VAL. PATRIMONIAL P/ COTA', '<div class=\'cell\'>', patterns_to_remove)),
         'variation_12M': text_to_number(get_substring(data, 'title="Variação (12M)">VARIAÇÃO (12M)</span>', '</span>', patterns_to_remove)),
         'variation_30D': None,
         'min_52_weeks': None,
@@ -331,15 +330,15 @@ def convert_investidor10_data(data):
         'latests_dividends': text_to_number(get_substring(get_substring(data, 'YIELD 6 MESES', '<div class="content--info--item">', patterns_to_remove), 'content--info--item--value amount">', '</span>')),
         'latest_dividend': text_to_number(get_substring(data, 'ÚLTIMO RENDIMENTO', '</span>', patterns_to_remove)),
         'ffoy': None,
-        'vacancy': text_to_number(get_substring(data, 'VACÂNCIA', '<div class="cell">', patterns_to_remove)),
+        'vacancy': text_to_number(get_substring(data, 'VACÂNCIA', '<div class=\'cell\'>', patterns_to_remove)),
         'total_real_state': count_pattern_on_text(get_substring(data, 'Lista de Imóveis', '<button data-id="read-more-action'), 'card-propertie'),
-        'management': get_substring(data, 'TIPO DE GESTÃO', '<div class="cell">', patterns_to_remove),
+        'management': get_substring(data, 'TIPO DE GESTÃO', '<div class=\'cell\'>', patterns_to_remove),
         'cash_value': None,
         'assets_value': None,
         'market_value': None,
         'initial_date': None,
-        'target_public': get_substring(data, 'PÚBLICO-ALVO', '<div class="cell">', patterns_to_remove),
-        'term': get_substring(data, 'PRAZO DE DURAÇÃO', '<div class="cell">', patterns_to_remove)
+        'target_public': get_substring(data, 'PÚBLICO-ALVO', '<div class=\'cell\'>', patterns_to_remove),
+        'term': get_substring(data, 'PRAZO DE DURAÇÃO', '<div class=\'cell\'>', patterns_to_remove)
     }
 
 def get_data_from_investidor10_by(ticker):
