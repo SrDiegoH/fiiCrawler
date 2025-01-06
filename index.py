@@ -337,7 +337,7 @@ def get_data_from_investidor10_by(ticker):
         }
     
         response = request_get(f'https://investidor10.com.br/fiis/{ticker}', headers)
-        html_page = response.text[15898:]
+        html_page = response.text#[15898:]
     
         print(f'Investidor 10 data: {html_page}')
         print(f"Converted Investidor 10 data: {convert_investidor10_data(html_page)}")
