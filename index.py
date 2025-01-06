@@ -38,7 +38,6 @@ def get_substring(text, start_text, end_text, replace_by_paterns=[], should_remo
     cutted_text = new_text[len(start_text):end_index]
 
     if not cutted_text:
-        print('------>Not fount for ', start_text)
         return None
 
     clean_text = cutted_text.replace('\n', '').replace('\t', '')
@@ -48,7 +47,7 @@ def get_substring(text, start_text, end_text, replace_by_paterns=[], should_remo
     final_text = no_tags_text
     for pattern in replace_by_paterns:
         final_text = final_text.replace(pattern, '')
-    print('------>', start_text, '#@#', clean_text, '#@#', final_text)
+
     return final_text.strip()
 
 def text_to_number(text, should_convert_thousand_decimal_separators=True, convert_percent_to_decimal=False):
@@ -275,11 +274,13 @@ def convert_investidor10_data(data):
     ]
 
     def multiply_by_unit(data):
+        print('--->', data)
         if not data:
             return None
 
         value = text_to_number(data.replace('k|K|Mil|m|M|Milhões', ''))
 
+        print('--->', value)
         if 'k' in data or 'K' in data or 'Mil' in data:
             return value * 1000
         elif 'm' in data or 'M' in data or 'Milhões' in data:
@@ -287,28 +288,7 @@ def convert_investidor10_data(data):
 
         return value
 
-    def count_repetitions(data, pattern):
-        if not data:
-            return None
-
-        count = 0
-        index = -1
-        
-        while True:
-            index = data.find(pattern, index +1)
-
-            if index == -1:
-                break
-
-            count += 1
-
-        return count
-
-    def count_pattern_on_text(text, pattern):
-        if not text or not pattern:
-            return None
-
-        return text.lower().split().count(pattern.lower())
+    count_pattern_on_text = lambda text, pattern: None if not text or not pattern else text.lower().split().count(pattern.lower())
 
     return {
         'name':  get_substring(data, 'Razão Social', '<div class=\'cell\'>', patterns_to_remove),
@@ -377,7 +357,7 @@ def get_data_from_all_by(ticker):
         if not value:
             #print(f'Key: {key}')
             if key in data_fundsexplorer and data_fundsexplorer[key]:
-               # print(f'Found data on Fundsexplorer: {data_fundsexplorer[key]}')
+                #print(f'Found data on Fundsexplorer: {data_fundsexplorer[key]}')
                 data_merge[key] = data_fundsexplorer[key]
             elif key in data_investidor10 and data_investidor10[key]:
                 #print(f'Found data on Investidor 10: {data_investidor10[key]}')
