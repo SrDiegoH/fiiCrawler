@@ -319,7 +319,7 @@ def convert_investidor10_data(data):
         'max_52_weeks': None,
         'PVP': text_to_number(get_substring(data, 'title="P/VP">P/VP</span>', '</span>', patterns_to_remove)),
         'DY':  text_to_number(get_substring(data, 'DY (12M)</span>', '</span>', patterns_to_remove)),
-        'latests_dividends': text_to_number(get_substring(get_substring(data, 'YIELD 6 MESES', '<div class="content--info--item">', patterns_to_remove)), 'content--info--item--value amount">', '</span>'),
+        'latests_dividends': text_to_number(get_substring(get_substring(data, 'YIELD 6 MESES', '<div class="content--info--item">', patterns_to_remove), 'content--info--item--value amount">', '</span>')),
         'latest_dividend': text_to_number(get_substring(data, 'ÚLTIMO RENDIMENTO', '</span>', patterns_to_remove)),
         'ffoy': None,
         'vacancy': text_to_number(get_substring(data, 'VACÂNCIA', '<div class="cell">', patterns_to_remove)),
@@ -346,7 +346,6 @@ def get_data_from_investidor10_by(ticker):
         response = request_get(f'https://investidor10.com.br/fiis/{ticker}', headers)
         html_page = response.text#[15898:]
     
-        print(f'Investidor 10 data: {html_page}')
         print(f"Converted Investidor 10 data: {convert_investidor10_data(html_page)}")
         return convert_investidor10_data(html_page)
     except Exception as error:
