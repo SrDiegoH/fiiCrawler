@@ -25,7 +25,7 @@ def request_get(url, headers=None):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
 
-    print(f'Response from {url} : {response}')
+    #print(f'Response from {url} : {response}')
 
     return response
 
@@ -273,6 +273,9 @@ def convert_investidor10_data(data):
     ]
 
     def multiply_by_unit(data):
+        if not data:
+            return None
+
         value = text_to_number(data.replace('k|K|Mil|m|M|Milhões', ''))
 
         if 'k' in data or 'K' in data or 'Mil' in data:
@@ -283,6 +286,9 @@ def convert_investidor10_data(data):
         return value
 
     def count_repetitions(data, pattern):
+        if not data:
+            return None
+
         count = 0
         index = -1
         
