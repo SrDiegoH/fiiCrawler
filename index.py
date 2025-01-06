@@ -25,7 +25,7 @@ def request_get(url, headers=None):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
 
-    #print(f'Response from {url} : {response}')
+    print(f'Response from {url} : {response}')
 
     return response
 
@@ -330,10 +330,11 @@ def convert_investidor10_data(data):
 def get_data_from_investidor10_by(ticker):
     try:
         headers = {
-            'accept': '*/*',
+            'accept': 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
             'accept-language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-            'referer': 'https://investidor10.com.br/fiis/mxrf11/',
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 OPR/114.0.0.0',
+            #'referer': 'https://investidor10.com.br/fiis/mxrf11/',
+            'upgrade-insecure-requests': '1',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 OPR/115.0.0.0',
         }
     
         response = request_get(f'https://investidor10.com.br/fiis/{ticker}', headers)
