@@ -3,6 +3,7 @@ import http.client as httplib
 import json
 import os
 import re
+import traceback
 
 from flask import Flask, jsonify, request
 
@@ -295,7 +296,7 @@ def convert_investidor10_data(data):
         index = -1
         
         while True:
-            index = data.find(pattern, indice +1)
+            index = data.find(pattern, index +1)
 
             if index == -1:
                 break
