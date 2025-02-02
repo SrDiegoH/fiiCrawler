@@ -26,7 +26,7 @@ VALID_SOURCES = {
     'ALL_SOURCE': 'all'
 }
 
-VALID_INFOS = [ 'DY', 'PVP', 'actuation', 'assets_value', 'cash_value', 'equity_price', 'ffoy', 'initial_date', 'latest_dividend', 'latests_dividends', 'link', 'liquidity', 'management', 'market_value', 'max_52_weeks', 'min_52_weeks', 'name', 'net_equity_value', 'price', 'segment', 'target_public', 'term', 'total_issued_shares', 'total_real_state', 'type', 'vacancy', 'variation_12M', 'variation_30D' ]
+VALID_INFOS = [ 'actuation', 'assets_value', 'cash_value', 'DY', 'equity_price', 'ffoy', 'initial_date', 'latest_dividend', 'latests_dividends', 'link', 'liquidity', 'management', 'market_value', 'max_52_weeks', 'min_52_weeks', 'name', 'net_equity_value', 'price', 'PVP', 'segment', 'target_public', 'term', 'total_issued_shares', 'total_real_state', 'type', 'vacancy', 'variation_12M', 'variation_30D' ]
 
 def request_get(url, headers=None):
     response = requests.get(url, headers=headers)
