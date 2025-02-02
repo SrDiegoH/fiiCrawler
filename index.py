@@ -26,7 +26,7 @@ VALID_SOURCES = {
     'ALL_SOURCE': 'all'
 }
 
-VALID_INFOS = [ 'actuation', 'assets_value', 'cash_value', 'DY', 'equity_price', 'ffoy', 'initial_date', 'latest_dividend', 'latests_dividends', 'link', 'liquidity', 'management', 'market_value', 'max_52_weeks', 'min_52_weeks', 'name', 'net_equity_value', 'price', 'PVP', 'segment', 'target_public', 'term', 'total_issued_shares', 'total_real_state', 'type', 'vacancy', 'variation_12M', 'variation_30D' ]
+VALID_INFOS = [ 'actuation', 'assets_value', 'cash_value', 'dy', 'equity_price', 'ffoy', 'initial_date', 'latest_dividend', 'latests_dividends', 'link', 'liquidity', 'management', 'market_value', 'max_52_weeks', 'min_52_weeks', 'name', 'net_equity_value', 'price', 'pvp', 'segment', 'target_public', 'term', 'total_issued_shares', 'total_real_state', 'type', 'vacancy', 'variation_12m', 'variation_30d' ]
 
 def request_get(url, headers=None):
     response = requests.get(url, headers=headers)
@@ -174,12 +174,12 @@ def convert_fundamentus_data(data, info_names):
         'total_issued_shares': lambda: text_to_number(get_substring(data, 'Nro. Cotas</span>', '</span>', patterns_to_remove)),
         'net_equity_value': lambda: text_to_number(get_substring(data, 'Patrim Líquido</span>', '</span>', patterns_to_remove)),
         'equity_price': lambda: text_to_number(get_substring(data, 'VP/Cota</span>', '</span>', patterns_to_remove)),
-        'variation_12M': lambda: text_to_number(get_substring(data, '12 meses</span>', '</span>', patterns_to_remove)),
-        'variation_30D': lambda: text_to_number(get_substring(data, 'Mês</span>', '</span>', patterns_to_remove)),
+        'variation_12m': lambda: text_to_number(get_substring(data, '12 meses</span>', '</span>', patterns_to_remove)),
+        'variation_30d': lambda: text_to_number(get_substring(data, 'Mês</span>', '</span>', patterns_to_remove)),
         'min_52_weeks': lambda: text_to_number(get_substring(data, 'Min 52 sem</span>', '</span>', patterns_to_remove)),
         'max_52_weeks': lambda: text_to_number(get_substring(data, 'Max 52 sem</span>', '</span>', patterns_to_remove)),
-        'PVP': lambda: text_to_number(get_substring(data, 'P/VP</span>', '</span>', patterns_to_remove)),
-        'DY': lambda: text_to_number(get_substring(data, 'Div. Yield</span>', '</span>', patterns_to_remove)),
+        'pvp': lambda: text_to_number(get_substring(data, 'P/VP</span>', '</span>', patterns_to_remove)),
+        'dy': lambda: text_to_number(get_substring(data, 'Div. Yield</span>', '</span>', patterns_to_remove)),
         'latests_dividends': lambda: None,
         'latest_dividend': lambda: text_to_number(get_substring(data, 'Dividendo/cota</span>', '</span>', patterns_to_remove)),
         'ffoy': lambda: text_to_number(get_substring(data, 'FFO Yield</span>', '</span>', patterns_to_remove)),
@@ -231,12 +231,12 @@ def convert_fundsexplorer_data(data, info_names):
         'total_issued_shares': lambda: data['numero_cotas'],
         'net_equity_value': lambda: data['patrimonio'],
         'equity_price': lambda: data['valorpatrimonialcota'],
-        'variation_12M': lambda: data['valorizacao_12_meses'],
-        'variation_30D': lambda: data['valorizacao_mes'],
+        'variation_12m': lambda: data['valorizacao_12_meses'],
+        'variation_30d': lambda: data['valorizacao_mes'],
         'min_52_weeks': lambda: data['min_52_semanas'],
         'max_52_weeks': lambda: data['max_52_semanas'],
-        'PVP': lambda: data['pvp'],
-        'DY': lambda: data['dy'],
+        'pvp': lambda: data['pvp'],
+        'dy': lambda: data['dy'],
         'latests_dividends': lambda: data['dividendos_12_meses'],
         'latest_dividend': lambda: data['lastdividend'],
         'ffoy': lambda: None,
@@ -314,12 +314,12 @@ def convert_investidor10_data(data, info_names):
         'total_issued_shares': lambda: text_to_number(get_substring(data, 'COTAS EMITIDAS', '<div class=\'cell\'>', patterns_to_remove)),
         'net_equity_value': lambda: multiply_by_unit(get_substring(data, 'VALOR PATRIMONIAL', '<div class=\'cell\'>', patterns_to_remove)),
         'equity_price': lambda: text_to_number(get_substring(data, 'VAL. PATRIMONIAL P/ COTA', '<div class=\'cell\'>', patterns_to_remove)),
-        'variation_12M': lambda: text_to_number(get_substring(data, 'title="Variação (12M)">VARIAÇÃO (12M)</span>', '</span>', patterns_to_remove)),
-        'variation_30D': lambda: None,
+        'variation_12m': lambda: text_to_number(get_substring(data, 'title="Variação (12M)">VARIAÇÃO (12M)</span>', '</span>', patterns_to_remove)),
+        'variation_30d': lambda: None,
         'min_52_weeks': lambda: None,
         'max_52_weeks': lambda: None,
-        'PVP': lambda: text_to_number(get_substring(data, 'title="P/VP">P/VP</span>', '</span>', patterns_to_remove)),
-        'DY':  lambda: text_to_number(get_substring(data, 'DY (12M)</span>', '</span>', patterns_to_remove)),
+        'pvp': lambda: text_to_number(get_substring(data, 'title="P/VP">P/VP</span>', '</span>', patterns_to_remove)),
+        'dy':  lambda: text_to_number(get_substring(data, 'DY (12M)</span>', '</span>', patterns_to_remove)),
         'latests_dividends': lambda: text_to_number(get_substring(get_substring(data, 'YIELD 12 MESES', '</div>'), 'amount">', '</span>', patterns_to_remove)),
         'latest_dividend': lambda: text_to_number(get_substring(data, 'ÚLTIMO RENDIMENTO', '</div>', patterns_to_remove)),
         'ffoy': lambda: None,
