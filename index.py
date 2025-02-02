@@ -160,7 +160,7 @@ def convert_fundamentus_data(data, info_names):
         return text_to_number(vacancy_as_text) if vacancy_as_text else None
 
     def generate_link():
-      cnpj = get_substring(data, 'abrirGerenciadorDocumentosCVM?cnpjFundo=', '">Pesquisar Documentos')
+      cnpj = get_substring(data, 'abrirGerenciadorDocumentosCVM?cnpjFundo=', '">Pesquisar Documentos', '#')
       return f'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo={cnpj}'
 
     ALL_INFO = {
