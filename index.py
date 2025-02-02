@@ -409,9 +409,9 @@ def request_shares(ticker, source, info_names):
 
 @app.route('/fii/<ticker>', methods=['GET'])
 def get_fii_data_by(ticker):
-    should_delete_cache = request.args.get('should_delete_cache', '0').lower() in TRUE_BOOL_VALUES
-    should_clear_cache = request.args.get('should_clear_cache', '0').lower() in TRUE_BOOL_VALUES
-    should_use_cache = request.args.get('should_use_cache', '1').lower() in TRUE_BOOL_VALUES
+    should_delete_cache = request.args.get('should_delete_cache', '0').replace(' ', '').lower() in TRUE_BOOL_VALUES
+    should_clear_cache = request.args.get('should_clear_cache', '0').replace(' ', '').lower() in TRUE_BOOL_VALUES
+    should_use_cache = request.args.get('should_use_cache', '1').replace(' ', '').lower() in TRUE_BOOL_VALUES
 
     source = request.args.get('source', VALID_SOURCES['ALL_SOURCE']).replace(' ', '').lower()
     source = source if source in VALID_SOURCES.keys() else VALID_SOURCES['ALL_SOURCE']
