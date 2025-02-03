@@ -9,7 +9,6 @@ import traceback
 from flask import Flask, jsonify, request
 
 import requests
-from requests import RequestException
 
 app = Flask(__name__)
 app.json.sort_keys = False
