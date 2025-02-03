@@ -276,10 +276,10 @@ def get_data_from_fiis(ticker, info_names):
 
         data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']
 
-        #print(f"Converted Fundsexplorer data: {convert_fiis_data(data_as_json)}")
+        #print(f"Converted FIIs data: {convert_fiis_data(data_as_json)}")
         return convert_fiis_data(data_as_json, info_names)
     except Exception as error:
-        #print(f"Error on get Fundsexplorer data: {traceback.format_exc()}")
+        #print(f"Error on get FIIs data: {traceback.format_exc()}")
         return None
 
 def convert_fundsexplorer_data(data, info_names):
@@ -419,7 +419,7 @@ def get_data_from_investidor10(ticker, info_names):
         #print(f"Converted Investidor 10 data: {convert_investidor10_data(html_page)}")
         return convert_investidor10_data(html_page, info_names)
     except Exception as error:
-        #print(f"Error on get Fundsexplorer data: {traceback.format_exc()}")
+        #print(f"Error on get Investidor 10 data: {traceback.format_exc()}")
         return None
 
 def get_data_from_all_sources(ticker, info_names):
@@ -427,29 +427,29 @@ def get_data_from_all_sources(ticker, info_names):
     #print(f'Data from Fundamentus: {data_fundamentus}')
 
     blank_fundamentus_info_names = [ info for info in info_names if not data_fundamentus.get(info, False) ]
-    #print(f'Blank fundamentus names: {blank_fundamentus_info_names}')
+    #print(f'Blank Fundamentus names: {blank_fundamentus_info_names}')
 
     if data_fundamentus and not blank_fundamentus_info_names:
         return data_fundamentus
 
     data_fiis = get_data_from_fiis(ticker, blank_fundamentus_info_names if blank_fundamentus_info_names else info_names)
-    #print(f'Data from fiis: {data_fiis}')
+    #print(f'Data from FIIss: {data_fiis}')
 
     if data_fundamentus and data_fiis:
       data_fundamentus_or_fiis = { **data_fundamentus, **data_fiis }
-      #print(f'From fundamentus and fiis: {data_fundamentus_or_fiis}')
+      #print(f'From Fundamentus and FIIs: {data_fundamentus_or_fiis}')
     elif data_fundamentus and not data_fiis:
       data_fundamentus_or_fiis = data_fundamentus
-      #print(f'From fundamentus: {data_fundamentus_or_fiis}')
+      #print(f'From Fundamentus: {data_fundamentus_or_fiis}')
     elif not data_fundamentus and data_fiis:
       data_fundamentus_or_fiis = data_fiis
-      #print(f'From fiis: {data_fundamentus_or_fiis}')
+      #print(f'From FIIs: {data_fundamentus_or_fiis}')
     else:
       data_fundamentus_or_fiis = {}
       #print(f'From None: {data_fundamentus_or_fiis}')
 
     blank_fundamentus_or_fiis_info_names = [ info for info in info_names if not data_fundamentus_or_fiis.get(info, False) ]
-    #print(f'Blank fudnamentus or fiis names: {blank_fundamentus_or_fiis_info_names}')
+    #print(f'Blank Fundamentus or FIIs names: {blank_fundamentus_or_fiis_info_names}')
 
     if data_fundamentus_or_fiis and not blank_fundamentus_or_fiis_info_names:
         return data_fundamentus_or_fiis
