@@ -276,8 +276,8 @@ def get_data_from_fiis(ticker, info_names):
 
         data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']
 
-        #print(f"Converted Fundsexplorer data: {convert_fundsexplorer_data(data_as_json)}")
-        return convert_fundsexplorer_data(data_as_json, info_names)
+        #print(f"Converted Fundsexplorer data: {convert_fiis_data(data_as_json)}")
+        return convert_fiis_data(data_as_json, info_names)
     except Exception as error:
         #print(f"Error on get Fundsexplorer data: {traceback.format_exc()}")
         return None
