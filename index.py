@@ -22,7 +22,8 @@ CACHE_EXPIRY = timedelta(days=1)
 VALID_SOURCES = {
     'FUNDAMENTUS_SOURCE': 'fundamentus',
     'INVESTIDOR10_SOURCE': 'investidor10',
-    'FUNDSEXPLORER_SOURCE': 'fundsexplorer',
+    #'FUNDSEXPLORER_SOURCE': 'fundsexplorer',
+    'FIIS_SOURCE': 'fiis',
     'ALL_SOURCE': 'all'
 }
 
@@ -219,36 +220,100 @@ def get_data_from_fundamentus(ticker, info_names):
         #print(f'Error on get Fundamentus data: {traceback.format_exc()}')
         return None
 
-def convert_fundsexplorer_data(data, info_names):
+
+def convert_fiis_data(data, info_names):
+    data_meta = data['meta']
+
     ALL_INFO = {
-        'name': lambda: data['name'],
-        'type': lambda: data['setor_atuacao'],
-        'segment': lambda: data['segmento_ambima'],
-        'actuation': lambda: data['segmento_atuacao'],
+        'name': lambda: data_meta['name'],
+        'type': lambda: data_meta['setor_atuacao'],
+        'segment': lambda: data_meta['segmento_ambima'],
+        'actuation': lambda: data['category'],
         'link': lambda: None,
-        'price': lambda: data['valor'],
-        'liquidity': lambda: data['liquidezmediadiaria'],
-        'total_issued_shares': lambda: data['numero_cotas'],
-        'net_equity_value': lambda: data['patrimonio'],
-        'equity_price': lambda: data['valorpatrimonialcota'],
-        'variation_12m': lambda: data['valorizacao_12_meses'],
-        'variation_30d': lambda: data['valorizacao_mes'],
-        'min_52_weeks': lambda: data['min_52_semanas'],
-        'max_52_weeks': lambda: data['max_52_semanas'],
-        'pvp': lambda: data['pvp'],
-        'dy': lambda: data['dy'],
-        'latests_dividends': lambda: data['dividendos_12_meses'],
-        'latest_dividend': lambda: data['lastdividend'],
+        'price': lambda: data_meta['valor'],
+        'liquidity': lambda: data_meta['liquidezmediadiaria'],
+        'total_issued_shares': lambda: data_meta['numero_cotas'],
+        'net_equity_value': lambda: data_meta['patrimonio'],
+        'equity_price': lambda: data_meta['valorpatrimonialcota'],
+        'variation_12m': lambda: data_meta['valorizacao_12_meses'],
+        'variation_30d': lambda: data_meta['valorizacao_mes'],
+        'min_52_weeks': lambda: data_meta['min_52_semanas'],
+        'max_52_weeks': lambda: data_meta['max_52_semanas'],
+        'pvp': lambda: data_meta['pvp'],
+        'dy': lambda: data_meta['dy'],
+        'latests_dividends': lambda: data_meta['dividendos_12_meses'],
+        'latest_dividend': lambda: data_meta['lastdividend'],
         'ffoy': lambda: None,
-        'vacancy': lambda: data['vacancia'],
-        'total_real_state': lambda: data['assets_number'],
-        'management': lambda: data['gestao'],
-        'cash_value': lambda: data['valor_caixa'],
+        'vacancy': lambda: data_meta['vacancia'],
+        'total_real_state': lambda: data_meta['assets_number'],
+        'management': lambda: data_meta['gestao'],
+        'cash_value': lambda: data_meta['valor_caixa'],
         'assets_value': lambda: None,
-        'market_value': lambda: data['valormercado'],
-        'initial_date': lambda: data['firstdate'],
-        'target_public': lambda: data['publicoalvo'],
-        'term': lambda: data['prazoduracao']
+        'market_value': lambda: data_meta['valormercado'],
+        'initial_date': lambda: data_meta['firstdate'],
+        'target_public': lambda: data_meta['publicoalvo'],
+        'term': lambda: data_meta['prazoduracao']
+    }
+
+    final_data = { info: ALL_INFO[info]() for info in info_names}
+
+    return final_data
+
+def get_data_from_fiis(ticker, info_names):
+    try:
+        headers = {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Origin': 'https://fiis.com.br',
+            'Referer': 'https://fiis.com.br/lupa-de-fiis/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 OPR/115.0.0.0'
+        }
+
+        response = request_get(f'https://fiis.com.br/{ticker}', headers=headers)
+        html_page = response.text
+    
+        data_as_text = get_substring(html_page, 'var dataLayer_content', 'dataLayer.push')
+
+        data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']
+
+        #print(f"Converted Fundsexplorer data: {convert_fundsexplorer_data(data_as_json)}")
+        return convert_fundsexplorer_data(data_as_json, info_names)
+    except Exception as error:
+        #print(f"Error on get Fundsexplorer data: {traceback.format_exc()}")
+        return None
+
+def convert_fundsexplorer_data(data, info_names):
+    data_meta = data['meta']
+
+    ALL_INFO = {
+        'name': lambda: data_meta['name'],
+        'type': lambda: data_meta['setor_atuacao'],
+        'segment': lambda: data_meta['segmento_ambima'],
+        'actuation': lambda: data['category'],
+        'link': lambda: None,
+        'price': lambda: data_meta['valor'],
+        'liquidity': lambda: data_meta['liquidezmediadiaria'],
+        'total_issued_shares': lambda: data_meta['numero_cotas'],
+        'net_equity_value': lambda: data_meta['patrimonio'],
+        'equity_price': lambda: data_meta['valorpatrimonialcota'],
+        'variation_12m': lambda: data_meta['valorizacao_12_meses'],
+        'variation_30d': lambda: data_meta['valorizacao_mes'],
+        'min_52_weeks': lambda: data_meta['min_52_semanas'],
+        'max_52_weeks': lambda: data_meta['max_52_semanas'],
+        'pvp': lambda: data_meta['pvp'],
+        'dy': lambda: data_meta['dy'],
+        'latests_dividends': lambda: data_meta['dividendos_12_meses'],
+        'latest_dividend': lambda: data_meta['lastdividend'],
+        'ffoy': lambda: None,
+        'vacancy': lambda: data_meta['vacancia'],
+        'total_real_state': lambda: data_meta['assets_number'],
+        'management': lambda: data_meta['gestao'],
+        'cash_value': lambda: data_meta['valor_caixa'],
+        'assets_value': lambda: None,
+        'market_value': lambda: data_meta['valormercado'],
+        'initial_date': lambda: data_meta['firstdate'],
+        'target_public': lambda: data_meta['publicoalvo'],
+        'term': lambda: data_meta['prazoduracao']
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names}
@@ -367,41 +432,43 @@ def get_data_from_all_sources(ticker, info_names):
     if data_fundamentus and not blank_fundamentus_info_names:
         return data_fundamentus
 
-    data_fundsexplorer = get_data_from_fundsexplorer(ticker, blank_fundamentus_info_names if blank_fundamentus_info_names else info_names)
-    #print(f'Data from Funds Explorer: {data_fundsexplorer}')
+    data_fiis = get_data_from_fiis(ticker, blank_fundamentus_info_names if blank_fundamentus_info_names else info_names)
+    #print(f'Data from fiis: {data_fiis}')
 
-    if data_fundamentus and data_fundsexplorer:
-      data_fundamentus_or_fundsexplorer = { **data_fundamentus, **data_fundsexplorer }
-      #print(f'From fundamentus and funds explorer: {data_fundamentus_or_fundsexplorer}')
-    elif data_fundamentus and not data_fundsexplorer:
-      data_fundamentus_or_fundsexplorer = data_fundamentus
-      #print(f'From fundamentus: {data_fundamentus_or_fundsexplorer}')
-    elif not data_fundamentus and data_fundsexplorer:
-      data_fundamentus_or_fundsexplorer = data_fundsexplorer
-      #print(f'From funds explorer: {data_fundamentus_or_fundsexplorer}')
+    if data_fundamentus and data_fiis:
+      data_fundamentus_or_fiis = { **data_fundamentus, **data_fiis }
+      #print(f'From fundamentus and fiis: {data_fundamentus_or_fiis}')
+    elif data_fundamentus and not data_fiis:
+      data_fundamentus_or_fiis = data_fundamentus
+      #print(f'From fundamentus: {data_fundamentus_or_fiis}')
+    elif not data_fundamentus and data_fiis:
+      data_fundamentus_or_fiis = data_fiis
+      #print(f'From fiis: {data_fundamentus_or_fiis}')
     else:
-      data_fundamentus_or_fundsexplorer = {}
-      #print(f'From None: {data_fundamentus_or_fundsexplorer}')
+      data_fundamentus_or_fiis = {}
+      #print(f'From None: {data_fundamentus_or_fiis}')
 
-    blank_fundamentus_or_fundsexplorer_info_names = [ info for info in info_names if not data_fundamentus_or_fundsexplorer.get(info, False) ]
-    #print(f'Blank fudnamentus or funds explorer names: {blank_fundamentus_or_fundsexplorer_info_names}')
+    blank_fundamentus_or_fiis_info_names = [ info for info in info_names if not data_fundamentus_or_fiis.get(info, False) ]
+    #print(f'Blank fudnamentus or fiis names: {blank_fundamentus_or_fiis_info_names}')
 
-    if data_fundamentus_or_fundsexplorer and not blank_fundamentus_or_fundsexplorer_info_names:
-        return data_fundamentus_or_fundsexplorer
+    if data_fundamentus_or_fiis and not blank_fundamentus_or_fiis_info_names:
+        return data_fundamentus_or_fiis
 
-    data_investidor_10 = get_data_from_investidor10(ticker, blank_fundamentus_or_fundsexplorer_info_names if blank_fundamentus_or_fundsexplorer_info_names else info_names)
+    data_investidor_10 = get_data_from_investidor10(ticker, blank_fundamentus_or_fiis_info_names if blank_fundamentus_or_fiis_info_names else info_names)
     #print(f'Data from Investidor 10: {data_investidor_10}')
 
     if not data_investidor_10:
-        return data_fundamentus_or_fundsexplorer
+        return data_fundamentus_or_fiis
 
-    return { **data_fundamentus_or_fundsexplorer, **data_investidor_10 }
+    return { **data_fundamentus_or_fiis, **data_investidor_10 }
 
 def request_shares(ticker, source, info_names):
     if source == VALID_SOURCES['FUNDAMENTUS_SOURCE']:
         return get_data_from_fundamentus(ticker, info_names)
-    elif source == VALID_SOURCES['FUNDSEXPLORER_SOURCE']:
-        return get_data_from_fundsexplorer(ticker, info_names)
+    elif source == VALID_SOURCES['FIIS_SOURCE']:
+        return get_data_from_fiis(ticker, info_names)
+    #elif source == VALID_SOURCES['FUNDSEXPLORER_SOURCE']:
+    #    return get_data_from_fundsexplorer(ticker, info_names)
     elif source == VALID_SOURCES['INVESTIDOR10_SOURCE']:
         return get_data_from_investidor10(ticker, info_names)
 
