@@ -1,4 +1,5 @@
 import ast
+import base64
 from datetime import datetime, timedelta
 from hashlib import sha512
 import json
@@ -26,7 +27,7 @@ VALID_SOURCES = {
     'ALL_SOURCE': 'all'
 }
 
-VALID_INFOS = [ 'actuation', 'assets_value', 'cash_value', 'dy', 'equity_price', 'ffoy', 'initial_date', 'latest_dividend', 'latests_dividends', 'link', 'liquidity', 'management', 'market_value', 'max_52_weeks', 'min_52_weeks', 'name', 'net_equity_value', 'price', 'pvp', 'segment', 'target_public', 'term', 'total_issued_shares', 'total_real_state', 'type', 'vacancy', 'variation_12m', 'variation_30d' ]
+VALID_INFOS = [ 'actuation', 'assets_value', 'cash_value', 'dy', 'equity_price', 'ffoy', 'initial_date', 'latest_dividend', 'latests_dividends', 'link', 'liquidity', 'management', 'market_value', 'max_52_weeks', 'min_52_weeks', 'name', 'net_equity_value', 'price', 'pvp', 'segment', 'target_public', 'term', 'total_issued_shares', 'total_real_state', 'type', 'vacancy', 'variation_12m', 'variation_30d', 'debit_by_real_state_acquisition', 'debit_by_securitization_receivables_acquisition' ]
 
 def request_get(url, headers=None):
     response = requests.get(url, headers=headers)
@@ -138,19 +139,23 @@ def write_to_cache(hash_id, data):
         cache_file.write(f'{hash_id}#@#{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}#@#{data}\n')
     #print('Writed')
 
-def convert_fundamentus_data(data, info_names):
+def convert_fundamentus_data(data, doc, cnpj, info_names):
     patterns_to_remove = [
         '</span>',
         '<span class="txt">',
         '<span class="oscil">',
+        '<span class="dado-valores">',
+        '<span class="dado-cabecalho">',
         '<font color="#F75D59">',
         '<font color="#306EFF">',
+        '<td>',
         '</td>',
         '<td class="data">',
         '<td class="data w1">',
         '<td class="data w2">',
         '<td class="data w3">',
         '<td class="data destaque w3">',
+        '<center>',
         '<a href="resultado.php?segmento='
     ]
 
@@ -159,21 +164,22 @@ def convert_fundamentus_data(data, info_names):
         vacancy_as_text = vacancy_as_text.replace('-', '').strip()
         return text_to_number(vacancy_as_text) if vacancy_as_text else None
 
-    def generate_link():
-      cnpj = get_substring(data, 'abrirGerenciadorDocumentosCVM?cnpjFundo=', '">Pesquisar Documentos', '#')
-      return f'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo={cnpj}'
-
     ALL_INFO = {
         'name': lambda: get_substring(data, 'Nome</span>', '</span>', patterns_to_remove),
+        #'name': lambda: get_substring(doc, 'Nome do Fundo/Classe: </span></td><td><span class="dado-cabecalho">', '</span>', patterns_to_remove),
         'type': lambda: None,
-        'segment': lambda: get_substring(data, 'Mandato</span>', '</span>', patterns_to_remove),
+        #'segment': lambda: get_substring(data, 'Mandato</span>', '</span>', patterns_to_remove),
+        'segment': lambda: get_substring(data, 'Segmento de Atua&ccedil;&atilde;o: </b>', '</span>', patterns_to_remove),
         'actuation': lambda: None,
-        'link': generate_link,
+        'link': f'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo={cnpj}#',
         'price': lambda: text_to_number(get_substring(data, 'Cotação</span>', '</span>', patterns_to_remove)),
         'liquidity': lambda: text_to_number(get_substring(data, 'Vol $ méd (2m)</span>', '</span>', patterns_to_remove)),
-        'total_issued_shares': lambda: text_to_number(get_substring(data, 'Nro. Cotas</span>', '</span>', patterns_to_remove)),
-        'net_equity_value': lambda: text_to_number(get_substring(data, 'Patrim Líquido</span>', '</span>', patterns_to_remove)),
-        'equity_price': lambda: text_to_number(get_substring(data, 'VP/Cota</span>', '</span>', patterns_to_remove)),
+        #'total_issued_shares': lambda: text_to_number(get_substring(data, 'Nro. Cotas</span>', '</span>', patterns_to_remove)),
+        'total_issued_shares': lambda: text_to_number(get_substring(doc, 'Quantidade de cotas emitidas: </span></td><td><span class="dado-cabecalho">', '</span>', patterns_to_remove)),
+        #'net_equity_value': lambda: text_to_number(get_substring(data, 'Patrim Líquido</span>', '</span>', patterns_to_remove)),
+        'net_equity_value': lambda: text_to_number(get_substring(doc, 'Patrim&ocirc;nio L&iacute;quido &ndash; R$ </b></td><td><span class="dado-valores">', '</span>', patterns_to_remove)),
+        #'equity_price': lambda: text_to_number(get_substring(data, 'VP/Cota</span>', '</span>', patterns_to_remove)),
+        'equity_price': lambda: text_to_number(get_substring(doc, 'Valor Patrimonial das Cotas &ndash; R$ </b></td><td><span class="dado-valores">', '</span>', patterns_to_remove)),
         'variation_12m': lambda: text_to_number(get_substring(data, '12 meses</span>', '</span>', patterns_to_remove)),
         'variation_30d': lambda: text_to_number(get_substring(data, 'Mês</span>', '</span>', patterns_to_remove)),
         'min_52_weeks': lambda: text_to_number(get_substring(data, 'Min 52 sem</span>', '</span>', patterns_to_remove)),
@@ -185,18 +191,55 @@ def convert_fundamentus_data(data, info_names):
         'ffoy': lambda: text_to_number(get_substring(data, 'FFO Yield</span>', '</span>', patterns_to_remove)),
         'vacancy': get_vacancy,
         'total_real_state': lambda: text_to_number(get_substring(data, 'Qtd imóveis</span>', '</span>', patterns_to_remove)),
-        'management': lambda: get_substring(data, 'Gestão</span>', '</span>', patterns_to_remove),
-        'cash_value': lambda: get_substring(data, 'Caixa\'', ']', [', data : [']),
-        'assets_value': lambda: text_to_number(get_substring(data, '>Ativos</span>', '</span>', patterns_to_remove)),
+        #'management': lambda: get_substring(data, 'Gestão</span>', '</span>', patterns_to_remove),
+        'management': lambda: get_substring(doc, 'Tipo de Gest&atilde;o: </b>', '</span>', patterns_to_remove),
+        #'cash_value': lambda: get_substring(data, 'Caixa\'', ']', [', data : [']),
+        'cash_value': lambda: text_to_number(get_substring(doc, 'Total mantido para as Necessidades de Liquidez (art. 46, &sect; &uacute;nico, ICVM 472/08) </b></td><td><b><span class="dado-valores">', '</span>', patterns_to_remove)),
+        #'assets_value': lambda: text_to_number(get_substring(data, '>Ativos</span>', '</span>', patterns_to_remove)),
+        'assets_value': lambda: text_to_number(get_substring(doc, 'Ativo &ndash; R$ </b></td><td>', '</span>', patterns_to_remove)),
         'market_value': lambda: text_to_number(get_substring(data, 'Valor de mercado</span>', '</span>', patterns_to_remove)),
-        'initial_date': lambda: None,
-        'target_public': lambda: None,
-        'term': lambda: None
+        'initial_date': lambda: get_substring(doc, 'doc de Funcionamento: </span></td><td><span class="dado-cabecalho">', '</span>', patterns_to_remove),
+        'target_public': lambda: get_substring(doc, 'P&uacute;blico Alvo: </span></td><td><span class="dado-cabecalho">', '</span>', patterns_to_remove),
+        'term': lambda: get_substring(doc, '>Prazo de Dura&ccedil;&atilde;o: </span></td>', '</span>', patterns_to_remove),
+        'debit_by_real_state_acquisition': lambda: text_to_number(get_substring(doc, 'Obriga&ccedil;&otilde;es por aquisi&ccedil;&atilde;o de im&oacute;veis </b></td><td><span class="dado-valores">', '</span>', patterns_to_remove)),
+        'debit_by_securitization_receivables_acquisition': lambda: text_to_number(get_substring(doc, 'Obriga&ccedil;&otilde;es por securitiza&ccedil;&atilde;o de receb&iacute;veis </b></td><td><span class="dado-valores">', '</span>', patterns_to_remove))
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names}
 
     return final_data
+
+def get_informe_mensal_estruturado_doc(cnpj):
+    try:
+      url = f'https://fnet.bmfbovespa.com.br/fnet/publico/pesquisarGerenciadorDocumentosDados?d=3&s=0&l=10&o%5B0%5D%5BdataEntrega%5D=desc&tipoFundo=1&idCategoriaDocumento=6&idTipoDocumento=40&idEspecieDocumento=0&situacao=A&cnpj={cnpj}&cnpjFundo={cnpj}&ultimaDataReferencia=true&isSession=false&_=1753033563564'
+
+      headers = {
+        'Accept': 'application/json, text/javascript, */*; q=0.01, text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+        'Cache-Control': 'no-cache',
+        'Dnt': '1',
+        'Pragma': 'no-cache',
+        'Priority': 'u=0, i',
+        'Referer': 'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 OPR/120.0.0.0',
+        'X-Requested-With': 'XMLHttpRequest'
+    }
+
+        response = request_get(url, headers)
+        documents_json = response.json()
+
+        document_id =  documents_json['data'][0]['id']
+
+        url = f'https://fnet.bmfbovespa.com.br/fnet/publico/exibirDocumento?id={document_id}&cvm=true&#toolbar=0'
+
+        response = requests.get(url, headers)
+        html_page = base64.b64decode(response.text).decode('utf-8')[1050:]
+
+        return html_page
+    except Exception as error:
+        #print(f'Error on get Fundamentus data: {traceback.format_exc()}')
+        return None
 
 def get_data_from_fundamentus(ticker, info_names):
     try:
@@ -213,8 +256,15 @@ def get_data_from_fundamentus(ticker, info_names):
         response = request_get(url, headers)
         html_page = response.text
 
+        cnpj = get_substring(html_page, 'abrirGerenciadorDocumentosCVM?cnpjFundo=', '">Pesquisar Documentos', '#')
+        
+        try:
+            informe_mensal_estruturado_doc = get_informe_mensal_estruturado_doc(cnpj)
+        except:
+          print(f'Error on get Fundamentus data: {traceback.format_exc()}')
+
         #print(f'Converted Fundamentus data: {convert_fundamentus_data(html_page, info_names)}')
-        return convert_fundamentus_data(html_page, info_names)
+        return convert_fundamentus_data(html_page, informe_mensal_estruturado_doc, cnpj, info_names)
     except Exception as error:
         #print(f'Error on get Fundamentus data: {traceback.format_exc()}')
         return None
@@ -249,7 +299,9 @@ def convert_fiis_data(data, info_names):
         'market_value': lambda: data['meta']['valormercado'] if 'valormercado' in data['meta'] else None,
         'initial_date': lambda: data['meta']['firstdate'] if 'firstdate' in data['meta'] else None,
         'target_public': lambda: data['meta']['publicoalvo'] if 'publicoalvo' in data['meta'] else None,
-        'term': lambda: data['meta']['prazoduracao'] if 'prazoduracao' in data['meta'] else None
+        'term': lambda: data['meta']['prazoduracao'] if 'prazoduracao' in data['meta'] else None,
+        'debit_by_real_state_acquisition': lambda: None,
+        'debit_by_securitization_receivables_acquisition': lambda: None
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names}
@@ -268,7 +320,7 @@ def get_data_from_fiis(ticker, info_names):
 
         response = request_get(f'https://fiis.com.br/{ticker}', headers=headers)
         html_page = response.text
-    
+
         data_as_text = get_substring(html_page, 'var dataLayer_content', 'dataLayer.push')
 
         data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']
@@ -308,7 +360,9 @@ def convert_fundsexplorer_data(data, info_names):
         'market_value': lambda: data['meta']['valormercado'] if 'valormercado' in data['meta'] else None,
         'initial_date': lambda: data['meta']['firstdate'] if 'firstdate' in data['meta'] else None,
         'target_public': lambda: data['meta']['publicoalvo'] if 'publicoalvo' in data['meta'] else None,
-        'term': lambda: data['meta']['prazoduracao'] if 'prazoduracao' in data['meta'] else None
+        'term': lambda: data['meta']['prazoduracao'] if 'prazoduracao' in data['meta'] else None,
+        'debit_by_real_state_acquisition': lambda: None,
+        'debit_by_securitization_receivables_acquisition': lambda: None
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names}
@@ -325,10 +379,10 @@ def get_data_from_fundsexplorer(ticker, info_names):
             'Upgrade-Insecure-Requests': '1',
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 OPR/112.0.0.0'
         }
-    
+
         response = request_get(f'https://www.fundsexplorer.com.br/funds/{ticker}', headers)
         html_page = response.text
-    
+
         data_as_text = get_substring(html_page, 'var dataLayer_content', 'dataLayer.push')
 
         data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']['meta']
@@ -391,7 +445,9 @@ def convert_investidor10_data(data, info_names):
         'market_value': lambda: None,
         'initial_date': lambda: None,
         'target_public': lambda: get_substring(data, 'PÚBLICO-ALVO', '<div class=\'cell\'>', patterns_to_remove),
-        'term': lambda: get_substring(data, 'PRAZO DE DURAÇÃO', '<div class=\'cell\'>', patterns_to_remove)
+        'term': lambda: get_substring(data, 'PRAZO DE DURAÇÃO', '<div class=\'cell\'>', patterns_to_remove),
+        'debit_by_real_state_acquisition': lambda: None,
+        'debit_by_securitization_receivables_acquisition': lambda: None
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names}
@@ -407,11 +463,11 @@ def get_data_from_investidor10(ticker, info_names):
             'upgrade-insecure-requests': '1',
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 OPR/115.0.0.0',
         }
-    
+
         response = request_get(f'https://investidor10.com.br/fiis/{ticker}', headers)
         html_page = response.text[15898:]
-    
-        #print(f"Converted Investidor 10 data: {convert_investidor10_data(html_page)}")
+
+        print(f"Converted Investidor 10 data: {convert_investidor10_data(html_page)}")
         return convert_investidor10_data(html_page, info_names)
     except Exception as error:
         #print(f"Error on get Investidor 10 data: {traceback.format_exc()}")
