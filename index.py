@@ -284,7 +284,7 @@ def convert_fiis_data(data, info_names):
         'max_52_weeks': lambda: data['meta']['max_52_semanas'] if 'max_52_semanas' in data['meta'] else None,
         'pvp': lambda: data['meta']['pvp'] if 'pvp' in data['meta'] else None,
         'dy': lambda: data['meta']['dy'] if 'dy' in data['meta'] else None,
-        'latests_dividends': lambda: data['meta']['dividendos_12_meses'] if 'dividendos_12_meses' in data['meta'] else None,
+        'latests_dividends': lambda: data['meta']['avgdividend'] if 'avgdividend' in data['meta'] else None,
         'latest_dividend': lambda: data['meta']['lastdividend'] if 'lastdividend' in data['meta'] else None,
         'ffoy': lambda: None,
         'vacancy': lambda: data['meta']['vacancia'] if 'vacancia' in data['meta'] else None,
