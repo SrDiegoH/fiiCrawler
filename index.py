@@ -3,6 +3,7 @@ import base64
 from datetime import datetime, timedelta
 from hashlib import sha512
 import json
+import logging
 import os
 import re
 import traceback
@@ -10,6 +11,9 @@ import traceback
 from flask import Flask, jsonify, request
 
 import requests
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.json.sort_keys = False
@@ -648,6 +652,8 @@ def get_fii_data(ticker):
     info_names = request.args.get('info_names', '').replace(' ', '').lower().split(',')
     info_names = [ info for info in info_names if info in VALID_INFOS ]
     info_names = info_names if len(info_names) else VALID_INFOS
+
+    logger.info('---------> Testing loggin')
 
     #print(f'Delete cache? {should_delete_cache}, Clear cache? {should_clear_cache}, Use cache? {should_use_cache}')
     #print(f'Ticker: {ticker}, Source: {source}, Info names: {info_names}')
