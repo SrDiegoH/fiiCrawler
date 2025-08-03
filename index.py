@@ -454,10 +454,10 @@ def get_data_from_fundsexplorer(ticker, info_names):
 
         data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']['meta']
 
-        log_debug(f"Converted Fundsexplorer data: {convert_fundsexplorer_data(data_as_json, info_names)}")
+        log_debug(f'Converted Fundsexplorer data: {convert_fundsexplorer_data(data_as_json, info_names)}')
         return convert_fundsexplorer_data(data_as_json, info_names)
     except Exception as error:
-        log_error(f"Error on get Fundsexplorer data: {traceback.format_exc()}")
+        log_error(f'Error on get Fundsexplorer data: {traceback.format_exc()}')
 
     return None
 
@@ -731,7 +731,7 @@ def get_fii_data(ticker):
     if can_use_cache:
         write_to_cache(ticker, data)
 
-    return jsonify({'data': data, 'date': datetime.now().strftime("%d/%m/%Y, %H:%M")}), 200
+    return jsonify({'data': data, 'date': datetime.now().strftime(DATE_FORMAT)}), 200
 
 if __name__ == '__main__':
     log_debug('Starting fiiCrawler API')
