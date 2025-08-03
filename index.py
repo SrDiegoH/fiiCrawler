@@ -132,7 +132,7 @@ def request_get(url, headers=None):
 
     return response
 
-def convert_fundamentus_data(data, doc_IME, doc_ITE, cnpj, info_names):
+def convert_fundamentus_data(data, doc_IME, doc_ITE, doc_RA, cnpj, info_names):
     patterns_to_remove = [
         '</span>',
         '<span class="txt">',
@@ -192,6 +192,9 @@ def convert_fundamentus_data(data, doc_IME, doc_ITE, cnpj, info_names):
 
         return max(fii_type, key=fii_type.get)
 
+    price = text_to_number(get_substring(data, 'Cotação</span>', '</span>', patterns_to_remove))
+    latests_dividends = sum(doc_RA.values())
+
     ALL_INFO = {
         #'name': lambda: get_substring(data, 'Nome</span>', '</span>', patterns_to_remove),
         'name': lambda: get_substring(doc_IME, 'Nome do Fundo/Classe: </span></td><td><span class="dado-cabecalho">', '</span>', patterns_to_remove),
@@ -200,7 +203,7 @@ def convert_fundamentus_data(data, doc_IME, doc_ITE, cnpj, info_names):
         'segment': lambda: get_substring(doc_IME, 'Segmento de Atua&ccedil;&atilde;o: </b>', '</span>', patterns_to_remove),
         'actuation': lambda: None,
         'link': lambda: f'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo={cnpj}#',
-        'price': lambda: text_to_number(get_substring(data, 'Cotação</span>', '</span>', patterns_to_remove)),
+        'price': lambda: price,
         'liquidity': lambda: text_to_number(get_substring(data, 'Vol $ méd (2m)</span>', '</span>', patterns_to_remove)),
         #'total_issued_shares': lambda: text_to_number(get_substring(data, 'Nro. Cotas</span>', '</span>', patterns_to_remove)),
         'total_issued_shares': lambda: text_to_number(get_substring(doc_IME, 'Quantidade de cotas emitidas: </span></td><td><span class="dado-cabecalho">', '</span>', patterns_to_remove)),
@@ -213,9 +216,11 @@ def convert_fundamentus_data(data, doc_IME, doc_ITE, cnpj, info_names):
         'min_52_weeks': lambda: text_to_number(get_substring(data, 'Min 52 sem</span>', '</span>', patterns_to_remove)),
         'max_52_weeks': lambda: text_to_number(get_substring(data, 'Max 52 sem</span>', '</span>', patterns_to_remove)),
         'pvp': lambda: text_to_number(get_substring(data, 'P/VP</span>', '</span>', patterns_to_remove)),
-        'dy': lambda: text_to_number(get_substring(data, 'Div. Yield</span>', '</span>', patterns_to_remove)),
-        'latests_dividends': lambda: None,
-        'latest_dividend': lambda: text_to_number(get_substring(data, 'Dividendo/cota</span>', '</span>', patterns_to_remove)),
+        #'dy': lambda: text_to_number(get_substring(data, 'Div. Yield</span>', '</span>', patterns_to_remove)),
+        'dy': lambda: (price / latests_dividends) * 100,
+        'latests_dividends': lambda: latests_dividends,
+        #'latest_dividend': lambda: text_to_number(get_substring(data, 'Dividendo/cota</span>', '</span>', patterns_to_remove)),
+        'latest_dividend': lambda: doc_RA[max(doc_RA.keys(), key=lambda d: datetime.strptime(d, "%d%m%Y"))] if len(doc_RA) else None,
         'ffoy': lambda: text_to_number(get_substring(data, 'FFO Yield</span>', '</span>', patterns_to_remove)),
         'vacancy': lambda: text_to_number(get_substring(data, 'Vacância Média</span>', '</span>', patterns_to_remove).replace('-', '').strip()),
         #'total_real_state': lambda: text_to_number(get_substring(data, 'Qtd imóveis</span>', '</span>', patterns_to_remove)),
@@ -299,6 +304,48 @@ def get_informe_trimestral_estruturado_doc(cnpj):
 
     return None
 
+def get_rendimentos_amortizacoes_doc(cnpj):
+    try:
+        now = datetime.now()
+
+        day = now.day if now.day >= 10 else f'0{now.day}'
+        month = now.month if now.month >= 10 else f'0{now.month}'
+        day_month = f'{day}%2F{month}'
+
+        url = f'https://fnet.bmfbovespa.com.br/fnet/publico/pesquisarGerenciadorDocumentosDados?d=5&s=0&l=25&o%5B0%5D%5BdataEntrega%5D=desc&tipoFundo=1&idCategoriaDocumento=14&idTipoDocumento=41&idEspecieDocumento=0&situacao=A&cnpj={cnpj}&cnpjFundo={cnpj}&dataInicial={day_month}%2F{now.year -1}&dataFinal={day_month}%2F{now.year}&isSession=false&_=1754204469153'
+
+        headers = {
+            'Accept': 'application/json, text/javascript, */*; q=0.01, text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+            'Referer': 'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 OPR/120.0.0.0',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+
+        response = request_get(url, headers)
+        documents_json = response.json()
+
+        simplified_doc = {}
+        pattern_to_remove = '</td><td><span class="dado-valores">'
+
+        for document in documents_json['data']:
+            url = f'https://fnet.bmfbovespa.com.br/fnet/publico/exibirDocumento?id={document["id"]}&cvm=true&#toolbar=0'
+
+            response = requests.get(url, headers)
+
+            html_doc = base64.b64decode(response.text).decode('utf-8')[1050:]
+
+            data_key = get_substring(html_doc, 'Data do pagamento', '</span>', pattern_to_remove)
+            value = text_to_number(get_substring(html_doc, 'Valor do provento (R$/unidade)', '</span>', pattern_to_remove))
+
+            simplified_doc[data_key] = value
+
+        return simplified_doc
+    except Exception as error:
+        log_error(f'Error on get Rendimentos e Amortizacoes doc: {traceback.format_exc()}')
+
+    return None
+
 def get_data_from_fundamentus(ticker, info_names):
     try:
         url = f'https://fundamentus.com.br/detalhes.php?papel={ticker}'
@@ -317,9 +364,10 @@ def get_data_from_fundamentus(ticker, info_names):
         cnpj = get_substring(html_page, 'abrirGerenciadorDocumentosCVM?cnpjFundo=', '">Pesquisar Documentos', '#')
         informe_mensal_estruturado_doc = get_informe_mensal_estruturado_doc(cnpj)
         informe_trimestral_estruturado_doc = get_informe_trimestral_estruturado_doc(cnpj)
+        rendimentos_amortizacoes_doc = get_rendimentos_amortizacoes_doc(cnpj)
 
-        log_debug(f'Converted Fundamentus data: {convert_fundamentus_data(html_page, informe_mensal_estruturado_doc, informe_trimestral_estruturado_doc, cnpj, info_names)}')
-        return convert_fundamentus_data(html_page, informe_mensal_estruturado_doc, informe_trimestral_estruturado_doc, cnpj, info_names)
+        log_debug(f'Converted Fundamentus data: {convert_fundamentus_data(html_page, informe_mensal_estruturado_doc, informe_trimestral_estruturado_doc, rendimentos_amortizacoes_doc, cnpj, info_names)}')
+        return convert_fundamentus_data(html_page, informe_mensal_estruturado_doc, informe_trimestral_estruturado_doc, rendimentos_amortizacoes_doc, cnpj, info_names)
     except Exception as error:
         log_error(f'Error on get Fundamentus data: {traceback.format_exc()}')
 
