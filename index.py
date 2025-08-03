@@ -63,7 +63,7 @@ VALID_INFOS = [
     'debit_by_securitization_receivables_acquisition'
 ]
 
-LOG_RUNNER = os.environ.get('LOG_RUNNER', 'PRINTER')
+LOG_RUNNER = os.environ.get('LOG_RUNNER', 'LOGGING')
 LOG_LEVEL = os.environ.get('LOG_LEVEL', ERROR)
 
 if LOG_RUNNER == 'LOGGING':
