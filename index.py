@@ -1,7 +1,6 @@
 import ast
 import base64
 from datetime import datetime, timedelta
-from hashlib import sha512
 import json
 import os
 import re
