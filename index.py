@@ -597,16 +597,27 @@ def request_shares(ticker, source, info_names, cached_data):
         if not blank_cached_data_info_names:
             return cached_data
 
-    if source == VALID_SOURCES['FUNDAMENTUS_SOURCE']:
-        return get_data_from_fundamentus(ticker, blank_cached_data_info_names)
-    elif source == VALID_SOURCES['FIIS_SOURCE']:
-        return get_data_from_fiis(ticker, blank_cached_data_info_names)
-    elif source == VALID_SOURCES['FUNDSEXPLORER_SOURCE']:
-        return get_data_from_fundsexplorer(ticker, blank_cached_data_info_names)
-    elif source == VALID_SOURCES['INVESTIDOR10_SOURCE']:
-        return get_data_from_investidor10(ticker, blank_cached_data_info_names)
+    fresh_data = None
 
-    return get_data_from_all_sources(ticker, blank_cached_data_info_names)
+    if source == VALID_SOURCES['FUNDAMENTUS_SOURCE']:
+        fresh_data = get_data_from_fundamentus(ticker, blank_cached_data_info_names)
+    elif source == VALID_SOURCES['FIIS_SOURCE']:
+        fresh_data = get_data_from_fiis(ticker, blank_cached_data_info_names)
+    elif source == VALID_SOURCES['FUNDSEXPLORER_SOURCE']:
+        fresh_data = get_data_from_fundsexplorer(ticker, blank_cached_data_info_names)
+    elif source == VALID_SOURCES['INVESTIDOR10_SOURCE']:
+        fresh_data = get_data_from_investidor10(ticker, blank_cached_data_info_names)
+    else:
+        fresh_data = get_data_from_all_sources(ticker, blank_cached_data_info_names)
+
+    if cached_data and fresh_data:
+        return { **cached_data, **fresh_data }
+    elif cached_data and not fresh_data:
+        return cached_data
+    elif not cached_data and fresh_data:
+        return fresh_data
+
+    return None
 
 def do_cache_exists():
     return os.path.exists(CACHE_FILE)
@@ -720,7 +731,7 @@ def get_fii_data(ticker):
     if can_use_cache:
         write_to_cache(ticker, data)
 
-    return jsonify({'data': data, 'source': 'fresh', 'date': datetime.now().strftime("%d/%m/%Y, %H:%M")}), 200
+    return jsonify({'data': data, 'date': datetime.now().strftime("%d/%m/%Y, %H:%M")}), 200
 
 if __name__ == '__main__':
     log_debug('Starting fiiCrawler API')
