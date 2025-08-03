@@ -66,9 +66,17 @@ VALID_INFOS = [
 app = Flask(__name__)
 app.json.sort_keys = False
 
-def log(message, level='DEBUG'):
-    if level == LOG_LEVEL:
-        print(f'{datetime.now().strftime(DATE_FORMAT)} - {level} - {message}')
+def log_error(message):
+    if LOG_LEVEL == 'ERROR' or LOG_LEVEL == 'INFO' or LOG_LEVEL == 'DEBUG':
+        print(f'{datetime.now().strftime(DATE_FORMAT)} - ERROR - {message}')
+
+def log_info(message):
+    if LOG_LEVEL == 'INFO' or LOG_LEVEL == 'DEBUG':
+        print(f'{datetime.now().strftime(DATE_FORMAT)} - INFO - {message}')
+
+def log_debug(message):
+    if LOG_LEVEL == 'DEBUG':
+        print(f'{datetime.now().strftime(DATE_FORMAT)} - DEBUG - {message}')
 
 def get_substring(text, start_text, end_text, replace_by_paterns=[], should_remove_tags=False):
     start_index = text.find(start_text)
@@ -120,7 +128,7 @@ def request_get(url, headers=None):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
 
-    log(f'Response from {url} : {response}')
+    log_debug(f'Response from {url} : {response}')
 
     return response
 
@@ -259,7 +267,7 @@ def get_informe_mensal_estruturado_doc(cnpj):
 
         return html_doc
     except Exception as error:
-        log(f'Error on get Informe Mensal doc: {traceback.format_exc()}', 'ERROR')
+        log_error(f'Error on get Informe Mensal doc: {traceback.format_exc()}')
 
     return None
 
@@ -287,7 +295,7 @@ def get_informe_trimestral_estruturado_doc(cnpj):
 
         return html_doc
     except Exception as error:
-        log(f'Error on get Informe Trimestral doc: {traceback.format_exc()}', 'ERROR')
+        log_error(f'Error on get Informe Trimestral doc: {traceback.format_exc()}')
 
     return None
 
@@ -310,10 +318,10 @@ def get_data_from_fundamentus(ticker, info_names):
         informe_mensal_estruturado_doc = get_informe_mensal_estruturado_doc(cnpj)
         informe_trimestral_estruturado_doc = get_informe_trimestral_estruturado_doc(cnpj)
 
-        log(f'Converted Fundamentus data: {convert_fundamentus_data(html_page, informe_mensal_estruturado_doc, informe_trimestral_estruturado_doc, cnpj, info_names)}')
+        log_debug(f'Converted Fundamentus data: {convert_fundamentus_data(html_page, informe_mensal_estruturado_doc, informe_trimestral_estruturado_doc, cnpj, info_names)}')
         return convert_fundamentus_data(html_page, informe_mensal_estruturado_doc, informe_trimestral_estruturado_doc, cnpj, info_names)
     except Exception as error:
-        log(f'Error on get Fundamentus data: {traceback.format_exc()}', 'ERROR')
+        log_error(f'Error on get Fundamentus data: {traceback.format_exc()}')
 
     return None
 
@@ -378,10 +386,10 @@ def get_data_from_fiis(ticker, info_names):
 
         data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']
 
-        log(f'Converted FIIs data: {convert_fiis_data(data_as_json, info_names)}')
+        log_debug(f'Converted FIIs data: {convert_fiis_data(data_as_json, info_names)}')
         return convert_fiis_data(data_as_json, info_names)
     except Exception as error:
-        log(f'Error on get FIIs data: {traceback.format_exc()}', 'ERROR')
+        log_error(f'Error on get FIIs data: {traceback.format_exc()}')
 
     return None
 
@@ -446,10 +454,10 @@ def get_data_from_fundsexplorer(ticker, info_names):
 
         data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']['meta']
 
-        log(f"Converted Fundsexplorer data: {convert_fundsexplorer_data(data_as_json)}")
+        log_debug(f"Converted Fundsexplorer data: {convert_fundsexplorer_data(data_as_json, info_names)}")
         return convert_fundsexplorer_data(data_as_json, info_names)
     except Exception as error:
-        log(f"Error on get Fundsexplorer data: {traceback.format_exc()}", 'ERROR')
+        log_error(f"Error on get Fundsexplorer data: {traceback.format_exc()}")
 
     return None
 
@@ -532,47 +540,47 @@ def get_data_from_investidor10(ticker, info_names):
         response = request_get(f'https://investidor10.com.br/fiis/{ticker}', headers)
         html_page = response.text[15898:]
 
-        log(f"Converted Investidor 10 data: {convert_investidor10_data(html_page, info_names)}")
+        log_debug(f'Converted Investidor 10 data: {convert_investidor10_data(html_page, info_names)}')
         return convert_investidor10_data(html_page, info_names)
     except Exception as error:
-        log(f"Error on get Investidor 10 data: {traceback.format_exc()}", 'ERROR')
+        log_error(f'Error on get Investidor 10 data: {traceback.format_exc()}')
 
     return None
 
 def get_data_from_all_sources(ticker, info_names):
     data_fundamentus = get_data_from_fundamentus(ticker, info_names)
-    log(f'Data from Fundamentus: {data_fundamentus}', 'INFO')
+    log_info(f'Data from Fundamentus: {data_fundamentus}')
 
     blank_fundamentus_info_names = [ info for info in info_names if not data_fundamentus.get(info, False) ]
-    log(f'Blank Fundamentus names: {blank_fundamentus_info_names}')
+    log_debug(f'Blank Fundamentus names: {blank_fundamentus_info_names}')
 
     if data_fundamentus and not blank_fundamentus_info_names:
         return data_fundamentus
 
     data_fiis = get_data_from_fiis(ticker, blank_fundamentus_info_names if blank_fundamentus_info_names else info_names)
-    log(f'Data from FIISs: {data_fiis}', 'INFO')
+    log_info(f'Data from FIISs: {data_fiis}')
 
     if data_fundamentus and data_fiis:
         data_fundamentus_or_fiis = { **data_fundamentus, **data_fiis }
-        log(f'From Fundamentus and FIIs: {data_fundamentus_or_fiis}')
+        log_debug(f'From Fundamentus and FIIs: {data_fundamentus_or_fiis}')
     elif data_fundamentus and not data_fiis:
         data_fundamentus_or_fiis = data_fundamentus
-        log(f'From Fundamentus: {data_fundamentus_or_fiis}')
+        log_debug(f'From Fundamentus: {data_fundamentus_or_fiis}')
     elif not data_fundamentus and data_fiis:
         data_fundamentus_or_fiis = data_fiis
-        log(f'From FIIs: {data_fundamentus_or_fiis}')
+        log_debug(f'From FIIs: {data_fundamentus_or_fiis}')
     else:
         data_fundamentus_or_fiis = {}
-        log(f'From None: {data_fundamentus_or_fiis}')
+        log_debug(f'From None: {data_fundamentus_or_fiis}')
 
     blank_fundamentus_or_fiis_info_names = [ info for info in info_names if not data_fundamentus_or_fiis.get(info, False) ]
-    log(f'Blank Fundamentus or FIIs names: {blank_fundamentus_or_fiis_info_names}')
+    log_debug(f'Blank Fundamentus or FIIs names: {blank_fundamentus_or_fiis_info_names}')
 
     if data_fundamentus_or_fiis and not blank_fundamentus_or_fiis_info_names:
         return data_fundamentus_or_fiis
 
     data_investidor_10 = get_data_from_investidor10(ticker, blank_fundamentus_or_fiis_info_names if blank_fundamentus_or_fiis_info_names else info_names)
-    log(f'Data from Investidor 10: {data_investidor_10}', 'INFO')
+    log_info(f'Data from Investidor 10: {data_investidor_10}')
 
     if not data_investidor_10:
         return data_fundamentus_or_fiis
@@ -584,7 +592,7 @@ def request_shares(ticker, source, info_names, cached_data):
 
     if cached_data:
         blank_cached_data_info_names = [ info for info in info_names if not cached_data.get(info, False) ]
-        log(f'Blank cache names: {blank_cached_data_info_names}')
+        log_debug(f'Blank cache names: {blank_cached_data_info_names}')
 
         if not blank_cached_data_info_names:
             return cached_data
@@ -605,21 +613,21 @@ def do_cache_exists():
 
 def delete_cache():
     if not do_cache_exists():
-        log('No cache to delete', 'INFO')
+        log_info('No cache to delete')
         return
 
-    log('Deleting cache')
+    log_debug('Deleting cache')
 
     os.remove(CACHE_FILE)
 
-    log('Cache deletion completed', 'INFO')
+    log_info('Cache deletion completed')
 
 def clear_cache(ticker):
     if not do_cache_exists():
-        log('No cache to clean', 'INFO')
+        log_info('No cache to clean')
         return
 
-    log('Cleaning cache')
+    log_debug('Cleaning cache')
 
     with open(CACHE_FILE, 'w+') as cache_file:
         lines = cache_file.readlines()
@@ -628,14 +636,14 @@ def clear_cache(ticker):
             if not line.startswith(ticker):
                 cache_file.write(line)
 
-    log('Cache cleaning completed', 'INFO')
+    log_info('Cache cleaning completed')
 
 def read_cache(ticker):
     if not do_cache_exists():
-        log('No cache to read', 'INFO')
+        log_info('No cache to read')
         return None
 
-    log('Reading cache')
+    log_debug('Reading cache')
 
     with open(CACHE_FILE, 'r') as cache_file:
         for line in cache_file:
@@ -645,25 +653,25 @@ def read_cache(ticker):
                 cached_date = datetime.strptime(cached_datetime, DATE_FORMAT)
 
                 if datetime.now() - cached_date <= CACHE_EXPIRY:
-                    log(f'Cache reading completed, cache found: Date: {cached_datetime}', 'INFO')
+                    log_info(f'Cache reading completed, cache found: Date: {cached_datetime}')
                     return ast.literal_eval(data)
                 else:
-                    log(f'Cache reading completed, cache expired: Date: {cached_datetime}', 'INFO')                    
+                    log_info(f'Cache reading completed, cache expired: Date: {cached_datetime}')                    
                     clear_cache(ticker)
                     return None
 
-        log('Cache reading completed, cache not found')
+        log_info('Cache reading completed, cache not found')
         return None
 
 def write_to_cache(ticker, data):
-    log('Writing cache')
+    log_debug('Writing cache')
 
     with open(CACHE_FILE, 'a') as cache_file:
         cache_data = f'{ticker}#@#{datetime.now().strftime(DATE_FORMAT)}#@#{data}'
         cache_file.write(f'{cache_data}\n')
-        log(f'Writed cache data: {cache_data}')
+        log_debug(f'Writed cache data: {cache_data}')
 
-    log('Cache writing completed', 'INFO')
+    log_info('Cache writing completed')
 
 def get_from_cache(ticker, should_delete_all_cache, should_clear_cached_data, should_use_cache):
     if should_delete_all_cache:
@@ -678,7 +686,7 @@ def get_from_cache(ticker, should_delete_all_cache, should_clear_cached_data, sh
 
     if can_use_cache:
         cached_data = read_cache(ticker)
-        log(f'Data from Cache: {cached_data}')
+        log_info(f'Data from Cache: {cached_data}')
 
     return cached_data, can_use_cache
 
@@ -700,14 +708,14 @@ def get_fii_data(ticker):
     raw_info_names = [ info for info in get_parameter_info(request.args, 'info_names', '').split(',') if info in VALID_INFOS ]
     info_names = raw_info_names if len(raw_info_names) else VALID_INFOS
 
-    log(f'Should Delete cache? {should_delete_all_cache} - Should Clear cache? {should_clear_cached_data} - Should Use cache? {should_use_cache}')
-    log(f'Ticker: {ticker} - Source: {source} - Info names: {info_names}')
+    log_debug(f'Should Delete cache? {should_delete_all_cache} - Should Clear cache? {should_clear_cached_data} - Should Use cache? {should_use_cache}')
+    log_debug(f'Ticker: {ticker} - Source: {source} - Info names: {info_names}')
 
     cached_data, can_use_cache = get_from_cache(ticker, should_delete_all_cache, should_clear_cached_data, should_use_cache)
 
     data = request_shares(ticker, source, info_names, cached_data)
 
-    log(f'Final Data: {data}', 'INFO')
+    log_debug(f'Final Data: {data}')
 
     if can_use_cache:
         write_to_cache(ticker, data)
@@ -715,5 +723,5 @@ def get_fii_data(ticker):
     return jsonify({'data': data, 'source': 'fresh', 'date': datetime.now().strftime("%d/%m/%Y, %H:%M")}), 200
 
 if __name__ == '__main__':
-    log('Starting fiiCrawler API', 'INFO')
+    log_debug('Starting fiiCrawler API')
     app.run(debug=LOG_LEVEL == 'DEBUG')
