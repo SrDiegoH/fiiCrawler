@@ -217,7 +217,7 @@ def convert_fundamentus_data(data, doc_IME, doc_ITE, doc_RA, cnpj, info_names):
         'max_52_weeks': lambda: text_to_number(get_substring(data, 'Max 52 sem</span>', '</span>', patterns_to_remove)),
         'pvp': lambda: text_to_number(get_substring(data, 'P/VP</span>', '</span>', patterns_to_remove)),
         #'dy': lambda: text_to_number(get_substring(data, 'Div. Yield</span>', '</span>', patterns_to_remove)),
-        'dy': lambda: (price / latests_dividends) * 100,
+        'dy': lambda: (latests_dividends / price) * 100,
         'latests_dividends': lambda: latests_dividends,
         #'latest_dividend': lambda: text_to_number(get_substring(data, 'Dividendo/cota</span>', '</span>', patterns_to_remove)),
         'latest_dividend': lambda: doc_RA[max(doc_RA.keys(), key=lambda d: datetime.strptime(d, "%d%m%Y"))] if len(doc_RA) else None,
