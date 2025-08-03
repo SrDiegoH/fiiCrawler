@@ -3,7 +3,7 @@ import base64
 from datetime import datetime, timedelta
 from hashlib import sha512
 import json
-import logging
+from logging import CRITICAL, DEBUG, ERROR, Formatter, getLevelName, getLogger, INFO, StreamHandler
 import os
 import re
 import traceback
@@ -12,13 +12,7 @@ from flask import Flask, jsonify, request
 
 import requests
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
-app = Flask(__name__)
-app.json.sort_keys = False
-
-TRUE_BOOL_VALUES = ('1', 's', 'sim', 'y', 'yes', 't', 'true')
+DATE_FORMAT = '%d-%m-%Y %H:%M:%S'
 
 CACHE_FILE = '/tmp/cache.txt'
 CACHE_EXPIRY = timedelta(days=1)
@@ -66,16 +60,38 @@ VALID_INFOS = [
     'variation_12m',
     'variation_30d',
     'debit_by_real_state_acquisition',
-    'debit_by_securitization_receivables_acquisition' 
+    'debit_by_securitization_receivables_acquisition'
 ]
 
-def request_get(url, headers=None):
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
+LOG_RUNNER = os.environ.get('LOG_RUNNER', 'PRINTER')
+LOG_LEVEL = os.environ.get('LOG_LEVEL', ERROR)
 
-    #print(f'Response from {url} : {response}')
+if LOG_RUNNER == 'LOGGING':
+    logger = getLogger(__name__)
+    logger.setLevel(LOG_LEVEL)
+    logger_handler = StreamHandler()
+    logger_handler.setFormatter(Formatter(fmt='%(asctime)s - %(levelname)s - %(message)s', datefmt=DATE_FORMAT))
+    logger.addHandler(logger_handler)
 
-    return response
+app = Flask(__name__)
+app.json.sort_keys = False
+
+def print_runner(message, level):
+    if LOG_RUNNER == 'PRINTER' and level == LOG_LEVEL:
+        print(f'{datetime.now().strftime(DATE_FORMAT)} - {getLevelName(level)} - {message}')
+
+def log_runner(message, level):
+    if LOG_RUNNER == 'LOGGING':
+        if level == ERROR:
+            logger.error(message)
+        elif level == INFO:
+            logger.info(message)
+        else:
+            logger.debug(message)
+
+def log(message, level=DEBUG):
+      log_runner(message, level)
+      print_runner(message, level)
 
 def get_substring(text, start_text, end_text, replace_by_paterns=[], should_remove_tags=False):
     start_index = text.find(start_text)
@@ -100,7 +116,7 @@ def get_substring(text, start_text, end_text, replace_by_paterns=[], should_remo
 def text_to_number(text, should_convert_thousand_decimal_separators=True, convert_percent_to_decimal=False):
     try:
         if not text:
-            return None
+            raise Exception()
 
         if not isinstance(text, str):
             return text
@@ -123,61 +139,13 @@ def text_to_number(text, should_convert_thousand_decimal_separators=True, conver
     except:
         return 0
 
-def delete_cache():
-    if os.path.exists(CACHE_FILE):
-        #print('Deleting cache')
-        os.remove(CACHE_FILE)
-        #print('Deleted')
+def request_get(url, headers=None):
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
 
-def clear_cache(hash_id):
-    #print('Cleaning cache')
-    with open(CACHE_FILE, 'w+') as cache_file:
-        lines = cache_file.readlines()
+    log(f'Response from {url} : {response}')
 
-        for line in lines:
-            if not line.startswith(hash_id):
-                cache_file.write(line)
-    #print('Cleaned')
-
-def read_cache(hash_id, should_clear_cache):
-    if not os.path.exists(CACHE_FILE):
-        return None, None
-
-    if should_clear_cache:
-        clear_cache(hash_id)
-        return None, None
-
-    control_clean_cache = False
-
-    #print('Reading cache')
-    with open(CACHE_FILE, 'r') as cache_file:
-        for line in cache_file:
-            if not line.startswith(hash_id):
-                continue
-
-            _, cached_datetime, data = line.strip().split('#@#')
-
-            cached_date = datetime.strptime(cached_datetime, '%Y-%m-%d %H:%M:%S')
-
-            #print(f'Found value: Date: {cached_datetime} - Data: {data}')
-            if datetime.now() - cached_date <= CACHE_EXPIRY:
-                #print('Finished read from cache')
-                return ast.literal_eval(data), cached_date
-
-            control_clean_cache = True
-            break
-
-    if control_clean_cache:
-        clear_cache(hash_id)
-
-    return None, None
-
-def write_to_cache(hash_id, data):
-    #print('Writing cache')
-    with open(CACHE_FILE, 'a') as cache_file:
-        #print(f'Writed value: {f'{hash_id}#@#{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}#@#{data}\n'}')
-        cache_file.write(f'{hash_id}#@#{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}#@#{data}\n')
-    #print('Writed on cache')
+    return response
 
 def convert_fundamentus_data(data, doc_IME, doc_ITE, cnpj, info_names):
     patterns_to_remove = [
@@ -227,7 +195,7 @@ def convert_fundamentus_data(data, doc_IME, doc_ITE, cnpj, info_names):
                 text_to_number(get_substring(doc_IME, 'A&ccedil;&otilde;es de Sociedades cujo &uacute;nico prop&oacute;sito se enquadra entre as atividades permitidas aos FII ', '</span>', patterns_to_remove)) +
                 text_to_number(get_substring(doc_IME, 'Cotas de Sociedades que se enquadre entre as atividades permitidas aos FII', '</span>', patterns_to_remove)) +
                 text_to_number(get_substring(doc_IME, 'CEPAC)', '</span>', patterns_to_remove)) +
-                text_to_number(get_substring(doc_IME, 'Outros Valores Mobili&aacute;rios ', '</span>', patterns_to_remove)) 
+                text_to_number(get_substring(doc_IME, 'Outros Valores Mobili&aacute;rios ', '</span>', patterns_to_remove))
             )
 
     def fii_type():
@@ -286,7 +254,7 @@ def convert_fundamentus_data(data, doc_IME, doc_ITE, cnpj, info_names):
         'debit_by_securitization_receivables_acquisition': lambda: text_to_number(get_substring(doc_IME, 'Obriga&ccedil;&otilde;es por securitiza&ccedil;&atilde;o de receb&iacute;veis </b></td><td><span class="dado-valores">', '</span>', patterns_to_remove))
     }
 
-    final_data = { info: ALL_INFO[info]() for info in info_names}        
+    final_data = { info: ALL_INFO[info]() for info in info_names}
 
     return final_data
 
@@ -310,12 +278,13 @@ def get_informe_mensal_estruturado_doc(cnpj):
         url = f'https://fnet.bmfbovespa.com.br/fnet/publico/exibirDocumento?id={document_id}&cvm=true&#toolbar=0'
 
         response = requests.get(url, headers)
-        html_page = base64.b64decode(response.text).decode('utf-8')[1050:]
+        html_doc = base64.b64decode(response.text).decode('utf-8')[1050:]
 
-        return html_page
+        return html_doc
     except Exception as error:
-        #print(f'Error on get Informe Mensal data: {traceback.format_exc()}')
-        return None
+        log(f'Error on get Informe Mensal doc: {traceback.format_exc()}', ERROR)
+
+    return None
 
 def get_informe_trimestral_estruturado_doc(cnpj):
     try:
@@ -337,12 +306,13 @@ def get_informe_trimestral_estruturado_doc(cnpj):
         url = f'https://fnet.bmfbovespa.com.br/fnet/publico/exibirDocumento?id={document_id}&cvm=true&#toolbar=0'
 
         response = requests.get(url, headers)
-        html_page = base64.b64decode(response.text).decode('utf-8')[1050:]
+        html_doc = base64.b64decode(response.text).decode('utf-8')[1050:]
 
-        return html_page
+        return html_doc
     except Exception as error:
-        #print(f'Error on get Informe Trimestral data: {traceback.format_exc()}')
-        return None
+        log(f'Error on get Informe Trimestral doc: {traceback.format_exc()}', ERROR)
+
+    return None
 
 def get_data_from_fundamentus(ticker, info_names):
     try:
@@ -363,11 +333,12 @@ def get_data_from_fundamentus(ticker, info_names):
         informe_mensal_estruturado_doc = get_informe_mensal_estruturado_doc(cnpj)
         informe_trimestral_estruturado_doc = get_informe_trimestral_estruturado_doc(cnpj)
 
-        #print(f'Converted Fundamentus data: {convert_fundamentus_data(html_page, informe_mensal_estruturado_doc, cnpj, info_names)}')
+        log(f'Converted Fundamentus data: {convert_fundamentus_data(html_page, informe_mensal_estruturado_doc, informe_trimestral_estruturado_doc, cnpj, info_names)}')
         return convert_fundamentus_data(html_page, informe_mensal_estruturado_doc, informe_trimestral_estruturado_doc, cnpj, info_names)
     except Exception as error:
-        #print(f'Error on get Fundamentus data: {traceback.format_exc()}')
-        return None
+        log(f'Error on get Fundamentus data: {traceback.format_exc()}', ERROR)
+
+    return None
 
 
 def convert_fiis_data(data, info_names):
@@ -430,11 +401,12 @@ def get_data_from_fiis(ticker, info_names):
 
         data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']
 
-        #print(f"Converted FIIs data: {convert_fiis_data(data_as_json)}")
+        log(f'Converted FIIs data: {convert_fiis_data(data_as_json, info_names)}')
         return convert_fiis_data(data_as_json, info_names)
     except Exception as error:
-        #print(f"Error on get FIIs data: {traceback.format_exc()}")
-        return None
+        log(f'Error on get FIIs data: {traceback.format_exc()}', ERROR)
+
+    return None
 
 def convert_fundsexplorer_data(data, info_names):
     ALL_INFO = {
@@ -497,11 +469,12 @@ def get_data_from_fundsexplorer(ticker, info_names):
 
         data_as_json = json.loads(data_as_text.strip(';= '))['pagePostTerms']['meta']
 
-        #print(f"Converted Fundsexplorer data: {convert_fundsexplorer_data(data_as_json)}")
+        log(f"Converted Fundsexplorer data: {convert_fundsexplorer_data(data_as_json)}")
         return convert_fundsexplorer_data(data_as_json, info_names)
     except Exception as error:
-        #print(f"Error on get Fundsexplorer data: {traceback.format_exc()}")
-        return None
+        log(f"Error on get Fundsexplorer data: {traceback.format_exc()}", ERROR)
+
+    return None
 
 def convert_investidor10_data(data, info_names):
     patterns_to_remove = [
@@ -582,107 +555,188 @@ def get_data_from_investidor10(ticker, info_names):
         response = request_get(f'https://investidor10.com.br/fiis/{ticker}', headers)
         html_page = response.text[15898:]
 
-        #print(f"Converted Investidor 10 data: {convert_investidor10_data(html_page)}")
+        log(f"Converted Investidor 10 data: {convert_investidor10_data(html_page, info_names)}")
         return convert_investidor10_data(html_page, info_names)
     except Exception as error:
-        #print(f"Error on get Investidor 10 data: {traceback.format_exc()}")
-        return None
+        log(f"Error on get Investidor 10 data: {traceback.format_exc()}", ERROR)
+
+    return None
 
 def get_data_from_all_sources(ticker, info_names):
     data_fundamentus = get_data_from_fundamentus(ticker, info_names)
-    #print(f'Data from Fundamentus: {data_fundamentus}')
+    log(f'Data from Fundamentus: {data_fundamentus}', INFO)
 
     blank_fundamentus_info_names = [ info for info in info_names if not data_fundamentus.get(info, False) ]
-    #print(f'Blank Fundamentus names: {blank_fundamentus_info_names}')
+    log(f'Blank Fundamentus names: {blank_fundamentus_info_names}')
 
     if data_fundamentus and not blank_fundamentus_info_names:
         return data_fundamentus
 
     data_fiis = get_data_from_fiis(ticker, blank_fundamentus_info_names if blank_fundamentus_info_names else info_names)
-    #print(f'Data from FIIss: {data_fiis}')
+    log(f'Data from FIISs: {data_fiis}', INFO)
 
     if data_fundamentus and data_fiis:
         data_fundamentus_or_fiis = { **data_fundamentus, **data_fiis }
-        #print(f'From Fundamentus and FIIs: {data_fundamentus_or_fiis}')
+        log(f'From Fundamentus and FIIs: {data_fundamentus_or_fiis}')
     elif data_fundamentus and not data_fiis:
         data_fundamentus_or_fiis = data_fundamentus
-        #print(f'From Fundamentus: {data_fundamentus_or_fiis}')
+        log(f'From Fundamentus: {data_fundamentus_or_fiis}')
     elif not data_fundamentus and data_fiis:
         data_fundamentus_or_fiis = data_fiis
-        #print(f'From FIIs: {data_fundamentus_or_fiis}')
+        log(f'From FIIs: {data_fundamentus_or_fiis}')
     else:
         data_fundamentus_or_fiis = {}
-        #print(f'From None: {data_fundamentus_or_fiis}')
+        log(f'From None: {data_fundamentus_or_fiis}')
 
     blank_fundamentus_or_fiis_info_names = [ info for info in info_names if not data_fundamentus_or_fiis.get(info, False) ]
-    #print(f'Blank Fundamentus or FIIs names: {blank_fundamentus_or_fiis_info_names}')
+    log(f'Blank Fundamentus or FIIs names: {blank_fundamentus_or_fiis_info_names}')
 
     if data_fundamentus_or_fiis and not blank_fundamentus_or_fiis_info_names:
         return data_fundamentus_or_fiis
 
     data_investidor_10 = get_data_from_investidor10(ticker, blank_fundamentus_or_fiis_info_names if blank_fundamentus_or_fiis_info_names else info_names)
-    #print(f'Data from Investidor 10: {data_investidor_10}')
+    log(f'Data from Investidor 10: {data_investidor_10}', INFO)
 
     if not data_investidor_10:
         return data_fundamentus_or_fiis
 
     return { **data_fundamentus_or_fiis, **data_investidor_10 }
 
-def request_shares(ticker, source, info_names):
-    if source == VALID_SOURCES['FUNDAMENTUS_SOURCE']:
-        return get_data_from_fundamentus(ticker, info_names)
-    elif source == VALID_SOURCES['FIIS_SOURCE']:
-        return get_data_from_fiis(ticker, info_names)
-    elif source == VALID_SOURCES['FUNDSEXPLORER_SOURCE']:
-        return get_data_from_fundsexplorer(ticker, info_names)
-    elif source == VALID_SOURCES['INVESTIDOR10_SOURCE']:
-        return get_data_from_investidor10(ticker, info_names)
+def request_shares(ticker, source, info_names, cached_data):
+    blank_cached_data_info_names = info_names
 
-    return get_data_from_all_sources(ticker, info_names)
+    if cached_data:
+        blank_cached_data_info_names = [ info for info in info_names if not cached_data.get(info, False) ]
+        log(f'Blank cache names: {blank_cached_data_info_names}')
+
+        if not blank_cached_data_info_names:
+            return cached_data
+
+    if source == VALID_SOURCES['FUNDAMENTUS_SOURCE']:
+        return get_data_from_fundamentus(ticker, blank_cached_data_info_names)
+    elif source == VALID_SOURCES['FIIS_SOURCE']:
+        return get_data_from_fiis(ticker, blank_cached_data_info_names)
+    elif source == VALID_SOURCES['FUNDSEXPLORER_SOURCE']:
+        return get_data_from_fundsexplorer(ticker, blank_cached_data_info_names)
+    elif source == VALID_SOURCES['INVESTIDOR10_SOURCE']:
+        return get_data_from_investidor10(ticker, blank_cached_data_info_names)
+
+    return get_data_from_all_sources(ticker, blank_cached_data_info_names)
+
+def do_cache_exists():
+    return os.path.exists(CACHE_FILE)
+
+def delete_cache():
+    if not do_cache_exists():
+        log('No cache to delete', INFO)
+        return
+
+    log('Deleting cache')
+
+    os.remove(CACHE_FILE)
+
+    log('Cache deletion completed', INFO)
+
+def clear_cache(ticker):
+    if not do_cache_exists():
+        log('No cache to clean', INFO)
+        return
+
+    log('Cleaning cache')
+
+    with open(CACHE_FILE, 'w+') as cache_file:
+        lines = cache_file.readlines()
+
+        for line in lines:
+            if not line.startswith(ticker):
+                cache_file.write(line)
+
+    log('Cache cleaning completed', INFO)
+
+def read_cache(ticker):
+    if not do_cache_exists():
+        log('No cache to read', INFO)
+        return None
+
+    log('Reading cache')
+
+    with open(CACHE_FILE, 'r') as cache_file:
+        for line in cache_file:
+            if line.startswith(ticker):
+                _, cached_datetime, data = line.strip().split('#@#')
+
+                cached_date = datetime.strptime(cached_datetime, DATE_FORMAT)
+
+                if datetime.now() - cached_date <= CACHE_EXPIRY:
+                    log(f'Cache reading completed, cache found: Date: {cached_datetime}', INFO)
+                    return ast.literal_eval(data)
+                else:
+                    log(f'Cache reading completed, cache expired: Date: {cached_datetime}', INFO)                    
+                    clear_cache(ticker)
+                    return None
+
+        log('Cache reading completed, cache not found')
+        return None
+
+def write_to_cache(ticker, data):
+    log('Writing cache')
+
+    with open(CACHE_FILE, 'a') as cache_file:
+        cache_data = f'{ticker}#@#{datetime.now().strftime(DATE_FORMAT)}#@#{data}'
+        cache_file.write(f'{cache_data}\n')
+        log(f'Writed cache data: {cache_data}')
+
+    log('Cache writing completed', INFO)
+
+def get_from_cache(ticker, should_delete_all_cache, should_clear_cached_data, should_use_cache):
+    if should_delete_all_cache:
+        delete_cache()
+
+    if should_clear_cached_data and not should_delete_all_cache:
+        clear_cache(ticker)
+
+    can_use_cache = should_use_cache and not (should_delete_all_cache or should_clear_cached_data)
+
+    cached_data = None
+
+    if can_use_cache:
+        cached_data = read_cache(ticker)
+        log(f'Data from Cache: {cached_data}')
+
+    return cached_data, can_use_cache
+
+def get_parameter_info(request_parameters, parameter_name, dafault=None):
+    return request_parameters.get(parameter_name, dafault).replace(' ', '').lower()
+
+def get_cache_parameter_info(request_parameters, cache_parameter_name, dafault='0'):
+    return get_parameter_info(request_parameters, cache_parameter_name, dafault) in ('1', 's', 'sim', 'y', 'yes', 't', 'true')
 
 @app.route('/fii/<ticker>', methods=['GET'])
 def get_fii_data(ticker):
-    should_delete_cache = request.args.get('should_delete_cache', '0').replace(' ', '').lower() in TRUE_BOOL_VALUES
-    should_clear_cache = request.args.get('should_clear_cache', '0').replace(' ', '').lower() in TRUE_BOOL_VALUES
-    should_use_cache = request.args.get('should_use_cache', '1').replace(' ', '').lower() in TRUE_BOOL_VALUES
+    should_delete_all_cache = get_cache_parameter_info(request.args, 'should_delete_all_cache')
+    should_clear_cached_data = get_cache_parameter_info(request.args, 'should_clear_cached_data')
+    should_use_cache = get_cache_parameter_info(request.args, 'should_use_cache', '1')
 
-    source = request.args.get('source', VALID_SOURCES['ALL_SOURCE']).replace(' ', '').lower()
-    source = source if source in VALID_SOURCES.values() else VALID_SOURCES['ALL_SOURCE']
+    raw_source = get_parameter_info(request.args, 'source', VALID_SOURCES['ALL_SOURCE'])
+    source = raw_source if raw_source in VALID_SOURCES.values() else VALID_SOURCES['ALL_SOURCE']
 
-    info_names = request.args.get('info_names', '').replace(' ', '').lower().split(',')
-    info_names = [ info for info in info_names if info in VALID_INFOS ]
-    info_names = info_names if len(info_names) else VALID_INFOS
+    raw_info_names = [ info for info in get_parameter_info(request.args, 'info_names', '').split(',') if info in VALID_INFOS ]
+    info_names = raw_info_names if len(raw_info_names) else VALID_INFOS
 
-    logger.info('---------> Testing loggin')
+    log(f'Should Delete cache? {should_delete_all_cache} - Should Clear cache? {should_clear_cached_data} - Should Use cache? {should_use_cache}')
+    log(f'Ticker: {ticker} - Source: {source} - Info names: {info_names}')
 
-    #print(f'Delete cache? {should_delete_cache}, Clear cache? {should_clear_cache}, Use cache? {should_use_cache}')
-    #print(f'Ticker: {ticker}, Source: {source}, Info names: {info_names}')
+    cached_data, can_use_cache = get_from_cache(ticker, should_delete_all_cache, should_clear_cached_data, should_use_cache)
 
-    if should_delete_cache:
-        delete_cache()
+    data = request_shares(ticker, source, info_names, cached_data)
 
-    should_use_and_not_delete_cache = should_use_cache and not should_delete_cache
+    log(f'Final Data: {data}', INFO)
 
-    if should_use_and_not_delete_cache:
-        id = f'{ticker}{source}{",".join(sorted(info_names))}'.encode('utf-8')
-        hash_id = sha512(id).hexdigest()
-        #print(f'Cache Hash ID: {hash_id}, From values: {id}')
-
-        cached_data, cache_date = read_cache(hash_id, should_clear_cache)
-
-        if cached_data:
-            #print(f'Data from Cache: {cached_data}')
-            return jsonify({'data': cached_data, 'source': 'cache', 'date': cache_date.strftime("%d/%m/%Y, %H:%M")}), 200
-
-
-    data = request_shares(ticker, source, info_names)
-    #print(f'Data from Source: {data}')
-
-    if should_use_and_not_delete_cache and not should_clear_cache:
-        write_to_cache(hash_id, data)
+    if can_use_cache:
+        write_to_cache(ticker, data)
 
     return jsonify({'data': data, 'source': 'fresh', 'date': datetime.now().strftime("%d/%m/%Y, %H:%M")}), 200
 
 if __name__ == '__main__':
-    is_debug = os.getenv('IS_DEBUG', False)
-    app.run(debug=is_debug)
+    log('Starting fiiCrawler API', INFO)
+    app.run(debug=LOG_LEVEL == DEBUG)
