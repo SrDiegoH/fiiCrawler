@@ -1,6 +1,7 @@
 import ast
 import base64
 from datetime import datetime, timedelta
+from html import unescape
 import json
 import os
 import re
@@ -249,6 +250,7 @@ def convert_bmfbovespa_data(IME_doc, ITE_doc, RA_docs, cnpj, info_names):
         '</b>',
         '</span>',
         '</td>',
+        '<b>',
         '<center>',
         '<span class="dado-cabecalho">',
         '<span class="dado-valores">',
@@ -314,11 +316,11 @@ def convert_bmfbovespa_data(IME_doc, ITE_doc, RA_docs, cnpj, info_names):
         'market_value': lambda: None,
         'max_52_weeks': lambda: None,
         'min_52_weeks': lambda: None,
-        'name': lambda: get_substring(IME_doc[0], 'Nome do Fundo/Classe: </span>', '</span>', patterns_to_remove),
+        'name': lambda: unescape(get_substring(IME_doc[0], 'Nome do Fundo/Classe: </span>', '</span>', patterns_to_remove)),
         'net_equity_value': lambda: text_to_number(get_substring(IME_doc[0], 'Patrim&ocirc;nio L&iacute;quido &ndash; R$', '</span>', patterns_to_remove)),
         'price': lambda: None,
         'pvp': lambda: None,
-        'segment': lambda: get_substring(IME_doc[0], 'Segmento de Atua&ccedil;&atilde;o:', '</span>', patterns_to_remove),
+        'segment': lambda: unescape(get_substring(IME_doc[0], 'Segmento de Atua&ccedil;&atilde;o:', '</span>', patterns_to_remove)),
         'target_public': lambda: get_substring(IME_doc[0], 'P&uacute;blico Alvo: </span>', '</span>', patterns_to_remove),
         'term': lambda: get_substring(IME_doc[0], '>Prazo de Dura&ccedil;&atilde;o: </span>', '</span>', patterns_to_remove),
         'total_issued_shares': lambda: text_to_number(get_substring(IME_doc[0], 'Quantidade de cotas emitidas: </span>', '</span>', patterns_to_remove)),
