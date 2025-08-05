@@ -852,8 +852,7 @@ def filter_remaining_infos(data, info_names, default_info_names=None):
     if not data:
         return info_names
 
-    missing_info = [ info for info in info_names if not data.get(info) ]
-    log_debug(f'Missing info names: {missing_info}')
+    missing_info = [ info for info in info_names if info in data and data[info] is None ]
 
     return missing_info if missing_info else default_info_names
 
