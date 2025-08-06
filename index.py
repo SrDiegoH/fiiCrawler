@@ -70,9 +70,9 @@ VALID_INFOS = [
     'variation_30d'
 ]
 
-investidor_10_preloaded_data = None
-fundamentus_preloaded_data = None
-fiis_preloaded_data = None
+investidor_10_preloaded_data = (None, None)
+fundamentus_preloaded_data = (None, None)
+fiis_preloaded_data = (None, None)
 
 app = Flask(__name__)
 app.json.sort_keys = False
@@ -436,11 +436,11 @@ def get_cnpj_from_investidor10(ticker):
         cnpj = get_substring(html_cropped_body, 'CNPJ', '</div>', patterns_to_remove)
 
         if cnpj:
-          investidor_10_preloaded_data = html_cropped_body
+          investidor_10_preloaded_data = (ticker, html_cropped_body)
 
         return cnpj
     except:
-        investidor_10_preloaded_data = None
+        investidor_10_preloaded_data = (None, None)
         log_error(f'Error fetching CNPJ on Investidor 10 "{ticker}": {traceback.format_exc()}')
         return None
 
@@ -462,11 +462,11 @@ def get_cnpj_from_fiis(ticker):
         cnpj = get_substring(html_page, 'cnpj":"', '"', '\\')
 
         if cnpj:
-          fiis_preloaded_data = html_page
+          fiis_preloaded_data = (ticker, html_page)
 
         return cnpj
     except:
-        fiis_preloaded_data = None
+        fiis_preloaded_data = (None, None)
         log_error(f'Error fetching CNPJ on FIIs "{ticker}": {traceback.format_exc()}')
         return None
 
@@ -491,11 +491,11 @@ def get_cnpj_from_fundamentus(ticker):
         cnpj = get_substring(html_page, 'abrirGerenciadorDocumentosCVM?cnpjFundo=', '">Pesquisar Documentos', '#')
 
         if cnpj:
-          fundamentus_preloaded_data = html_page
+          fundamentus_preloaded_data = (ticker, html_page)
 
         return cnpj
     except:
-        fundamentus_preloaded_data = None
+        fundamentus_preloaded_data = (None, None)
         log_error(f'Error fetching CNPJ on Fundamentus for "{ticker}": {traceback.format_exc()}')
         return None
 
@@ -596,7 +596,7 @@ def get_data_from_fundamentus(ticker, info_names):
     global fundamentus_preloaded_data
 
     try:
-        if fundamentus_preloaded_data:
+        if fundamentus_preloaded_data[1] and ticker == fundamentus_preloaded_data[0]:
             return convert_fundamentus_data(fundamentus_preloaded_data, info_names)
 
         headers = {
@@ -668,7 +668,7 @@ def get_data_from_fiis(ticker, info_names):
     global fiis_preloaded_data
 
     try:
-        if fiis_preloaded_data:
+        if fiis_preloaded_data[1] and ticker == fiis_preloaded_data[0]:
             return convert_fiis_data(fiis_preloaded_data, info_names)
 
         headers = {
@@ -834,7 +834,7 @@ def get_data_from_investidor10(ticker, info_names):
     global investidor_10_preloaded_data
 
     try:
-        if investidor_10_preloaded_data:
+        if fiis_preloaded_data[1] and ticker == investidor_10_preloaded_data[0]:
             return convert_fiis_data(investidor_10_preloaded_data, info_names)
 
         headers = {
