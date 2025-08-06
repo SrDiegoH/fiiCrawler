@@ -994,6 +994,9 @@ def get_fii_data(ticker):
 
     log_debug(f'Final Data: {data}')
 
+    if not data:
+        return jsonify({ 'error': 'No data found' }), 404
+
     if can_use_cache and should_update_cache:
         upsert_cache(ticker, data)
 
