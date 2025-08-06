@@ -440,6 +440,7 @@ def get_cnpj_from_investidor10(ticker):
 
         return cnpj
     except:
+        investidor_10_preloaded_data = None
         log_error(f'Error fetching CNPJ on Investidor 10 "{ticker}": {traceback.format_exc()}')
         return None
 
@@ -465,6 +466,7 @@ def get_cnpj_from_fiis(ticker):
 
         return cnpj
     except:
+        fiis_preloaded_data = None
         log_error(f'Error fetching CNPJ on FIIs "{ticker}": {traceback.format_exc()}')
         return None
 
@@ -484,8 +486,7 @@ def get_cnpj_from_fundamentus(ticker):
         html_page = response.text
 
         if 'Nenhum papel encontrado' in html_page:
-            log_error(f'No CNPJ found on Fundamentus data for "{ticker}"')
-            return None
+            raise
 
         cnpj = get_substring(html_page, 'abrirGerenciadorDocumentosCVM?cnpjFundo=', '">Pesquisar Documentos', '#')
 
@@ -494,6 +495,7 @@ def get_cnpj_from_fundamentus(ticker):
 
         return cnpj
     except:
+        fundamentus_preloaded_data = None
         log_error(f'Error fetching CNPJ on Fundamentus for "{ticker}": {traceback.format_exc()}')
         return None
 
