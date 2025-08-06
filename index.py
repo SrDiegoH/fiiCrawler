@@ -597,7 +597,9 @@ def get_data_from_fundamentus(ticker, info_names):
 
     try:
         if fundamentus_preloaded_data[1] and ticker == fundamentus_preloaded_data[0]:
-            return convert_fundamentus_data(fundamentus_preloaded_data, info_names)
+            converted_data = convert_fundamentus_data(fundamentus_preloaded_data[1], info_names)
+            log_debug(f'Converted preloaded Fundamentus data: {converted_data}')
+            return converted_data
 
         headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
@@ -615,7 +617,7 @@ def get_data_from_fundamentus(ticker, info_names):
             return None
 
         converted_data = convert_fundamentus_data(html_page, info_names)
-        log_debug(f'Converted Fundamentus data: {converted_data}')
+        log_debug(f'Converted fresh Fundamentus data: {converted_data}')
         return converted_data
     except:
         log_error(f'Error fetching Fundamentus data for "{ticker}": {traceback.format_exc()}')
@@ -669,7 +671,9 @@ def get_data_from_fiis(ticker, info_names):
 
     try:
         if fiis_preloaded_data[1] and ticker == fiis_preloaded_data[0]:
-            return convert_fiis_data(fiis_preloaded_data, info_names)
+            converted_data = convert_fiis_data(fiis_preloaded_data[1], info_names)
+            log_debug(f'Converted preloaded FIIs data: {converted_data}')
+            return converted_data
 
         headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -687,7 +691,7 @@ def get_data_from_fiis(ticker, info_names):
         json_data = json.loads(raw_data.strip(';= '))['pagePostTerms']
 
         converted_data = convert_fiis_data(json_data, info_names)
-        log_debug(f'Converted FIIs data: {converted_data}')
+        log_debug(f'Converted fresh FIIs data: {converted_data}')
         return converted_data
     except:
         log_error(f'Error fetching FIIs data for "{ticker}": {traceback.format_exc()}')
@@ -834,8 +838,10 @@ def get_data_from_investidor10(ticker, info_names):
     global investidor_10_preloaded_data
 
     try:
-        if fiis_preloaded_data[1] and ticker == investidor_10_preloaded_data[0]:
-            return convert_fiis_data(investidor_10_preloaded_data, info_names)
+        if investidor_10_preloaded_data[1] and ticker == investidor_10_preloaded_data[0]:
+            converted_data = convert_investidor10_data(investidor_10_preloaded_data[1], info_names)
+            log_debug(f'Converted preloaded Investidor 10 data: {converted_data}')
+            return converted_data
 
         headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -849,8 +855,7 @@ def get_data_from_investidor10(ticker, info_names):
         html_cropped_body = response.text[15898:]
 
         converted_data = convert_investidor10_data(html_cropped_body, info_names)
-
-        log_debug(f'Converted Investidor 10 data: {converted_data}')
+        log_debug(f'Converted fresh Investidor 10 data: {converted_data}')
         return converted_data
     except:
         log_error(f'Error fetching data from Investidor 10 for "{ticker}": {traceback.format_exc()}')
