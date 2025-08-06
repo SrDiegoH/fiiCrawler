@@ -456,8 +456,8 @@ def get_cnpj_from_fiis(ticker):
         }
 
         response = request_get(f'https://fiis.com.br/{ticker}', headers=headers)
-
         html_page = response.text
+
         cnpj = get_substring(html_page, 'cnpj":"', '"', '\\')
 
         if cnpj:
@@ -483,6 +483,10 @@ def get_cnpj_from_fundamentus(ticker):
         response = request_get(f'https://fundamentus.com.br/detalhes.php?papel={ticker}', headers)
         html_page = response.text
 
+        if 'Nenhum papel encontrado' in html_page:
+            log_error(f'No CNPJ found on Fundamentus data for "{ticker}"')
+            return None
+
         cnpj = get_substring(html_page, 'abrirGerenciadorDocumentosCVM?cnpjFundo=', '">Pesquisar Documentos', '#')
 
         if cnpj:
@@ -493,21 +497,17 @@ def get_cnpj_from_fundamentus(ticker):
         log_error(f'Error fetching CNPJ on Fundamentus for "{ticker}": {traceback.format_exc()}')
         return None
 
-def get_cnpj(ticker):
-    cnpj = (
-        get_cnpj_from_fundamentus(ticker) or
-        get_cnpj_from_fiis(ticker) or
-        get_cnpj_from_investidor10(ticker)
-    )
-
-    if not cnpj:
-        log_error(f'CNPJ não encontrado para "{ticker}"')
-
-    return cnpj
-
 def get_data_from_bmfbovespa(ticker, info_names):
     try:
-        cnpj = get_cnpj(ticker)
+        cnpj = (
+            get_cnpj_from_fundamentus(ticker) or
+            get_cnpj_from_fiis(ticker) or
+            get_cnpj_from_investidor10(ticker)
+        )
+
+        if not cnpj:
+            log_error(f'No CNPJ found for "{ticker}"')
+            return None
 
         informe_mensal_estruturado_docs = get_informe_mensal_estruturado_docs(cnpj)
         informe_trimestral_estruturado_docs = get_informe_trimestral_estruturado_docs(cnpj)
@@ -608,6 +608,10 @@ def get_data_from_fundamentus(ticker, info_names):
         response = request_get(f'https://fundamentus.com.br/detalhes.php?papel={ticker}', headers)
         html_page = response.text
 
+        if 'Nenhum papel encontrado' in html_page:
+            log_error(f'No data found on Fundamentus data for "{ticker}"')
+            return None
+
         converted_data = convert_fundamentus_data(html_page, info_names)
         log_debug(f'Converted Fundamentus data: {converted_data}')
         return converted_data
@@ -674,8 +678,8 @@ def get_data_from_fiis(ticker, info_names):
         }
 
         response = request_get(f'https://fiis.com.br/{ticker}', headers=headers)
-
         html_page = response.text
+
         raw_data = get_substring(html_page, 'var dataLayer_content', 'dataLayer.push')
 
         json_data = json.loads(raw_data.strip(';= '))['pagePostTerms']
