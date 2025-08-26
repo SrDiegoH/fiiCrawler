@@ -29,7 +29,8 @@ VALID_SOURCES = {
     'FIIS_SOURCE': 'fiis',
     'FUNDAMENTUS_SOURCE': 'fundamentus',
     'FUNDSEXPLORER_SOURCE': 'fundsexplorer',
-    'INVESTIDOR10_SOURCE': 'investidor10'
+    'INVESTIDOR10_SOURCE': 'investidor10',
+    'INFOMONEY_SOURCE': 'infomoney'
 }
 
 VALID_INFOS = [
@@ -67,7 +68,9 @@ VALID_INFOS = [
     'type',
     'vacancy',
     'variation_12m',
-    'variation_30d'
+    'variation_30d',
+    'avg_price',
+    'mayer_multiple'
 ]
 
 investidor_10_preloaded_data = (None, None)
@@ -245,6 +248,14 @@ def request_get(url, headers=None):
 
     return response
 
+def request_post(url, headers=None, data=None):
+    response = requests.post(url, headers=headers, data=data)
+    response.raise_for_status()
+
+    log_debug(f'Response from {url} : {response}')
+
+    return response
+
 def convert_bmfbovespa_data(IME_doc, ITE_doc, RA_docs, cnpj, info_names):
     patterns_to_remove = [
         '</b>',
@@ -333,7 +344,9 @@ def convert_bmfbovespa_data(IME_doc, ITE_doc, RA_docs, cnpj, info_names):
         'type': fii_type,
         'vacancy': lambda: None,
         'variation_12m': lambda: None,
-        'variation_30d': lambda: None
+        'variation_30d': lambda: None,
+        'avg_price': lambda: None,
+        'mayer_multiple': lambda: None
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names}
@@ -395,17 +408,17 @@ def get_informe_trimestral_estruturado_docs(cnpj):
     return fetch_documents(cnpj, doc_configs)
 
 def get_rendimentos_amortizacoes_docs(cnpj):
-    now = datetime.now()
-    day_month = f'{now.day if now.day >= 10 else f"0{now.day}"}%2F{now.month if now.month >= 10 else f"0{now.month}"}'
+    today = datetime.now()
+    today_day_month = f'{today.day if today.day >= 10 else f"0{today.day}"}%2F{today.month if today.month >= 10 else f"0{today.month}"}'
 
     doc_configs = {
         'd': 5,
-        'day_month': day_month,
+        'day_month': today_day_month,
         'idCategoriaDocumento': 14,
         'idTipoDocumento': 41,
         'num_results': 25,
         'type': 'Rendimentos Amortizacoes',
-        'year': now.year
+        'year': today.year
     }
 
     RA_docs = fetch_documents(cnpj, doc_configs)
@@ -585,7 +598,9 @@ def convert_fundamentus_data(data, info_names):
         'type': lambda: None,
         'vacancy': get_vacancy,
         'variation_12m': lambda: text_to_number(get_substring(data, '12 meses</span>', '</span>', patterns_to_remove)),
-        'variation_30d': lambda: text_to_number(get_substring(data, 'Mês</span>', '</span>', patterns_to_remove))
+        'variation_30d': lambda: text_to_number(get_substring(data, 'Mês</span>', '</span>', patterns_to_remove)),
+        'avg_price': lambda: None,
+        'mayer_multiple': lambda: None
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names}
@@ -621,6 +636,89 @@ def get_data_from_fundamentus(ticker, info_names):
         return converted_data
     except:
         log_error(f'Error fetching Fundamentus data for "{ticker}": {traceback.format_exc()}')
+        return None
+
+def convert_infomoney_data(data, info_names):
+    prices = [ text_to_number(price[2]) for price in data ]
+    price = text_to_number(prices[0])
+    avg_price = sum(prices) / len(prices)
+
+    ALL_INFO = {
+        'actuation': lambda: None,
+        'assets_value': lambda: None,
+        'cash_value': lambda: None,
+        'debit_by_real_state_acquisition': lambda: None,
+        'debit_by_securitization_receivables_acquisition': lambda: None,
+        'dy': lambda: None,
+        'equity_price': lambda: None,
+        'ffoy': lambda: None,
+        'initial_date': lambda: None,
+        'latest_dividend': lambda: None,
+        'latests_dividends': lambda: None,
+        'link': lambda: f'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo={data["meta"]["cnpj"]}#',
+        'liquidity': lambda: None,
+        'management': lambda: None,
+        'market_value': lambda: None,
+        'max_52_weeks': lambda: max(prices),
+        'min_52_weeks': lambda: min(prices),
+        'name': lambda: None,
+        'net_equity_value': lambda: None,
+        'price': lambda: price,
+        'pvp': lambda: None,
+        'segment': lambda: None,
+        'target_public': lambda: None,
+        'term': lambda: None,
+        'total_issued_shares': lambda: None,
+        'total_mortgage': lambda: None,
+        'total_mortgage_value': lambda: None,
+        'total_real_state': lambda: None,
+        'total_real_state_value': lambda: None,
+        'total_stocks_fund_others': lambda: None,
+        'total_stocks_fund_others_value': lambda: None,
+        'type': lambda: None,
+        'vacancy': lambda: None,
+        'variation_12m': lambda: None,
+        'variation_30d': lambda: None,
+        'avg_price': lambda: avg_price,
+        'mayer_multiple': lambda: price / avg_price
+    }
+
+    final_data = { info: ALL_INFO[info]() for info in info_names }
+
+    return final_data
+
+def get_data_from_infomoney(ticker, info_names):
+    try:
+        headers = {
+            'accept': 'application/json, text/javascript, */*; q=0.01',
+            'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8,ko;q=0.7',
+            'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'dnt': '1',
+            'origin': 'https://www.infomoney.com.br',
+            'priority': 'u=1, i',
+            'referer': 'https://www.infomoney.com.br/cotacoes/b3/acao/banco-do-brasil-bbas3/historico/',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 OPR/120.0.0.0',
+            'x-requested-with': 'XMLHttpRequest'
+        }
+
+        base_url = 'https://www.infomoney.com.br/wp-json/infomoney/v1/quotes/history'
+
+        today = datetime.now()
+        today_day_month = f'{today.day if today.day >= 10 else f"0{today.day}"}%2F{today.month if today.month >= 10 else f"0{today.month}"}'
+
+        past_200_days = today - timedelta(days=365)
+        past_200_days_day_month = f'{past_200_days.day if past_200_days.day >= 10 else f"0{past_200_days.day}"}%2F{past_200_days.month if past_200_days.month >= 10 else f"0{past_200_days.month}"}'
+
+        form_data = f'page=0&numberItems=200&initialDate={past_200_days_day_month}%2F{past_200_days.year}&finalDate={today_day_month}%2F{today.year}&symbol={ticker}'
+
+        response = request_post(base_url, headers=headers, data=form_data)
+        prices = response.json()
+
+        converted_data = convert_infomoney_data(prices, info_names)
+        log_debug(f'Converted fresh InfoMoney data: {converted_data}')
+        return converted_data
+    except:
+        log_error(f'Error fetching InfoMoney data for "{ticker}": {traceback.format_exc()}')
         return None
 
 def convert_fiis_data(data, info_names):
@@ -659,7 +757,9 @@ def convert_fiis_data(data, info_names):
         'type': lambda: data['meta']['setor_atuacao'] if 'setor_atuacao' in data['meta'] else None,
         'vacancy': lambda: data['meta']['vacancia'] if 'vacancia' in data['meta'] else None,
         'variation_12m': lambda: data['meta']['valorizacao_12_meses'] if 'valorizacao_12_meses' in data['meta'] else None,
-        'variation_30d': lambda: data['meta']['valorizacao_mes'] if 'valorizacao_mes' in data['meta'] else None
+        'variation_30d': lambda: data['meta']['valorizacao_mes'] if 'valorizacao_mes' in data['meta'] else None,
+        'avg_price': lambda: None,
+        'mayer_multiple': lambda: None
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names }
@@ -733,7 +833,9 @@ def convert_fundsexplorer_data(data, info_names):
         'type': lambda: data['meta']['setor_atuacao'] if 'setor_atuacao' in data['meta'] else None,
         'vacancy': lambda: data['meta']['vacancia'] if 'vacancia' in data['meta'] else None,
         'variation_12m': lambda: data['meta']['valorizacao_12_meses'] if 'valorizacao_12_meses' in data['meta'] else None,
-        'variation_30d': lambda: data['meta']['valorizacao_mes'] if 'valorizacao_mes' in data['meta'] else None
+        'variation_30d': lambda: data['meta']['valorizacao_mes'] if 'valorizacao_mes' in data['meta'] else None,
+        'avg_price': lambda: None,
+        'mayer_multiple': lambda: None
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names }
@@ -827,7 +929,9 @@ def convert_investidor10_data(data, info_names):
         'type': lambda: get_substring(data, 'TIPO DE FUNDO', '<div class=\'cell\'>', patterns_to_remove),
         'vacancy': lambda: text_to_number(get_substring(data, 'VACÂNCIA', '<div class=\'cell\'>', patterns_to_remove)),
         'variation_12m': lambda: text_to_number(get_substring(data, 'title="Variação (12M)">VARIAÇÃO (12M)</span>', '</span>', patterns_to_remove)),
-        'variation_30d': lambda: None
+        'variation_30d': lambda: None,
+        'avg_price': lambda: None,
+        'mayer_multiple': lambda: None
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names }
@@ -906,11 +1010,20 @@ def get_data_from_all_sources(ticker, info_names):
     if combined_data and not missing_combined_infos:
         return combined_data
 
+    data_infomoney = get_data_from_infomoney(ticker, missing_combined_infos or info_names)
+    log_info(f'Data from InfoMoney: {data_infomoney}')
+
+    combined_data, missing_combined_infos = combine_data(combined_data, data_infomoney, info_names)
+    log_debug(f'Missing info from BM & FBovespa, Fundamentus or InfoMoney: {missing_combined_infos}')
+
+    if combined_data and not missing_combined_infos:
+        return combined_data
+
     data_fiis = get_data_from_fiis(ticker, missing_combined_infos or info_names)
     log_info(f'Data from FIIs: {data_fiis}')
 
     combined_data, missing_combined_infos = combine_data(combined_data, data_fiis, info_names)
-    log_debug(f'Missing info from BM & FBovespa, Fundamentus or FIIs: {missing_combined_infos}')
+    log_debug(f'Missing info from BM & FBovespa, Fundamentus, InfoMoney or FIIs: {missing_combined_infos}')
 
     if combined_data and not missing_combined_infos:
         return combined_data
@@ -929,7 +1042,8 @@ def get_data_from_sources(ticker, source, info_names):
         VALID_SOURCES['FIIS_SOURCE']: get_data_from_fiis,
         VALID_SOURCES['FUNDAMENTUS_SOURCE']: get_data_from_fundamentus,
         VALID_SOURCES['FUNDSEXPLORER_SOURCE']: get_data_from_fundsexplorer,
-        VALID_SOURCES['INVESTIDOR10_SOURCE']: get_data_from_investidor10
+        VALID_SOURCES['INVESTIDOR10_SOURCE']: get_data_from_investidor10,
+        VALID_SOURCES['INFOMONEY_SOURCE']: get_data_from_infomoney
     }
 
     fetch_function = SOURCES.get(source, get_data_from_all_sources)
