@@ -129,7 +129,6 @@ def upsert_cache(id, data):
     if updated:
         log_info(f'Cache updated for "{id}"')
 
-
 def clear_cache(id):
     if not cache_exists():
         return
@@ -1042,8 +1041,8 @@ def get_data_from_sources(ticker, source, info_names):
         VALID_SOURCES['FIIS_SOURCE']: get_data_from_fiis,
         VALID_SOURCES['FUNDAMENTUS_SOURCE']: get_data_from_fundamentus,
         VALID_SOURCES['FUNDSEXPLORER_SOURCE']: get_data_from_fundsexplorer,
-        VALID_SOURCES['INVESTIDOR10_SOURCE']: get_data_from_investidor10,
-        VALID_SOURCES['INFOMONEY_SOURCE']: get_data_from_infomoney
+        VALID_SOURCES['INFOMONEY_SOURCE']: get_data_from_infomoney,
+        VALID_SOURCES['INVESTIDOR10_SOURCE']: get_data_from_investidor10
     }
 
     fetch_function = SOURCES.get(source, get_data_from_all_sources)
