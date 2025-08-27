@@ -29,8 +29,8 @@ VALID_SOURCES = {
     'FIIS_SOURCE': 'fiis',
     'FUNDAMENTUS_SOURCE': 'fundamentus',
     'FUNDSEXPLORER_SOURCE': 'fundsexplorer',
-    'INVESTIDOR10_SOURCE': 'investidor10',
-    'INFOMONEY_SOURCE': 'infomoney'
+    'INFOMONEY_SOURCE': 'infomoney',
+    'INVESTIDOR10_SOURCE': 'investidor10'
 }
 
 VALID_INFOS = [
