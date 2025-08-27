@@ -36,6 +36,7 @@ VALID_SOURCES = {
 VALID_INFOS = [
     'actuation',
     'assets_value',
+    'avg_price',
     'cash_value',
     'debit_by_real_state_acquisition',
     'debit_by_securitization_receivables_acquisition',
@@ -50,6 +51,7 @@ VALID_INFOS = [
     'management',
     'market_value',
     'max_52_weeks',
+    'mayer_multiple',
     'min_52_weeks',
     'name',
     'net_equity_value',
@@ -59,18 +61,16 @@ VALID_INFOS = [
     'target_public',
     'term',
     'total_issued_shares',
-    'total_mortgage',
     'total_mortgage_value',
-    'total_real_state',
+    'total_mortgage',
     'total_real_state_value',
-    'total_stocks_fund_others',
+    'total_real_state',
     'total_stocks_fund_others_value',
+    'total_stocks_fund_others',
     'type',
     'vacancy',
     'variation_12m',
-    'variation_30d',
-    'avg_price',
-    'mayer_multiple'
+    'variation_30d'
 ]
 
 investidor_10_preloaded_data = (None, None)
@@ -312,6 +312,7 @@ def convert_bmfbovespa_data(IME_doc, ITE_doc, RA_docs, cnpj, info_names):
     ALL_INFO = {
         'actuation': lambda: None,
         'assets_value': lambda: text_to_number(get_substring(IME_doc[0], 'Ativo &ndash; R$', '</span>', patterns_to_remove)),
+        'avg_price': lambda: None,
         'cash_value': lambda: text_to_number(get_substring(IME_doc[0], 'Total mantido para as Necessidades de Liquidez (art. 46, &sect; &uacute;nico, ICVM 472/08) </b>', '</span>', patterns_to_remove)),
         'debit_by_real_state_acquisition': lambda: text_to_number(get_substring(IME_doc[0], 'Obriga&ccedil;&otilde;es por aquisi&ccedil;&atilde;o de im&oacute;veis', '</span>', patterns_to_remove)),
         'debit_by_securitization_receivables_acquisition': lambda: text_to_number(get_substring(IME_doc[0], 'Obriga&ccedil;&otilde;es por securitiza&ccedil;&atilde;o de receb&iacute;veis', '</span>', patterns_to_remove)),
@@ -326,6 +327,7 @@ def convert_bmfbovespa_data(IME_doc, ITE_doc, RA_docs, cnpj, info_names):
         'management': lambda: get_substring(IME_doc[0], 'Tipo de Gest&atilde;o:', '</span>', patterns_to_remove),
         'market_value': lambda: None,
         'max_52_weeks': lambda: None,
+        'mayer_multiple': lambda: None,
         'min_52_weeks': lambda: None,
         'name': lambda: unescape(get_substring(IME_doc[0], 'Nome do Fundo/Classe: </span>', '</span>', patterns_to_remove)),
         'net_equity_value': lambda: text_to_number(get_substring(IME_doc[0], 'Patrim&ocirc;nio L&iacute;quido &ndash; R$', '</span>', patterns_to_remove)),
@@ -344,9 +346,7 @@ def convert_bmfbovespa_data(IME_doc, ITE_doc, RA_docs, cnpj, info_names):
         'type': fii_type,
         'vacancy': lambda: None,
         'variation_12m': lambda: None,
-        'variation_30d': lambda: None,
-        'avg_price': lambda: None,
-        'mayer_multiple': lambda: None
+        'variation_30d': lambda: None
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names}
@@ -566,6 +566,7 @@ def convert_fundamentus_data(data, info_names):
     ALL_INFO = {
         'actuation': lambda: None,
         'assets_value': lambda: text_to_number(get_substring(data, '>Ativos</span>', '</span>', patterns_to_remove)),
+        'avg_price': lambda: None,
         'cash_value': lambda: text_to_number(get_substring(data, 'Caixa\'', ']', [', data : ['])),
         'debit_by_real_state_acquisition': lambda: None,
         'debit_by_securitization_receivables_acquisition': lambda: None,
@@ -580,6 +581,7 @@ def convert_fundamentus_data(data, info_names):
         'management': lambda: get_substring(data, 'Gestão</span>', '</span>', patterns_to_remove),
         'market_value': lambda: text_to_number(get_substring(data, 'Valor de mercado</span>', '</span>', patterns_to_remove)),
         'max_52_weeks': lambda: text_to_number(get_substring(data, 'Max 52 sem</span>', '</span>', patterns_to_remove)),
+        'mayer_multiple': lambda: None,
         'min_52_weeks': lambda: text_to_number(get_substring(data, 'Min 52 sem</span>', '</span>', patterns_to_remove)),
         'name': lambda: get_substring(data, 'Nome</span>', '</span>', patterns_to_remove),
         'net_equity_value': lambda: text_to_number(get_substring(data, 'Patrim Líquido</span>', '</span>', patterns_to_remove)),
@@ -598,9 +600,7 @@ def convert_fundamentus_data(data, info_names):
         'type': lambda: None,
         'vacancy': get_vacancy,
         'variation_12m': lambda: text_to_number(get_substring(data, '12 meses</span>', '</span>', patterns_to_remove)),
-        'variation_30d': lambda: text_to_number(get_substring(data, 'Mês</span>', '</span>', patterns_to_remove)),
-        'avg_price': lambda: None,
-        'mayer_multiple': lambda: None
+        'variation_30d': lambda: text_to_number(get_substring(data, 'Mês</span>', '</span>', patterns_to_remove))
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names}
@@ -646,6 +646,7 @@ def convert_infomoney_data(data, info_names):
     ALL_INFO = {
         'actuation': lambda: None,
         'assets_value': lambda: None,
+        'avg_price': lambda: avg_price,
         'cash_value': lambda: None,
         'debit_by_real_state_acquisition': lambda: None,
         'debit_by_securitization_receivables_acquisition': lambda: None,
@@ -660,6 +661,7 @@ def convert_infomoney_data(data, info_names):
         'management': lambda: None,
         'market_value': lambda: None,
         'max_52_weeks': lambda: max(prices),
+        'mayer_multiple': lambda: price / avg_price,
         'min_52_weeks': lambda: min(prices),
         'name': lambda: None,
         'net_equity_value': lambda: None,
@@ -678,9 +680,7 @@ def convert_infomoney_data(data, info_names):
         'type': lambda: None,
         'vacancy': lambda: None,
         'variation_12m': lambda: None,
-        'variation_30d': lambda: None,
-        'avg_price': lambda: avg_price,
-        'mayer_multiple': lambda: price / avg_price
+        'variation_30d': lambda: None
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names }
@@ -725,6 +725,7 @@ def convert_fiis_data(data, info_names):
     ALL_INFO = {
         'actuation': lambda: data['category'][0] if 'valor' in data['meta'] else None,
         'assets_value': lambda: None,
+        'avg_price': lambda: None,
         'cash_value': lambda: data['meta']['valor_caixa'] if 'gestao' in data['meta'] else None,
         'debit_by_real_state_acquisition': lambda: None,
         'debit_by_securitization_receivables_acquisition': lambda: None,
@@ -739,6 +740,7 @@ def convert_fiis_data(data, info_names):
         'management': lambda: data['meta']['gestao'] if 'valor_caixa' in data['meta'] else None,
         'market_value': lambda: data['meta']['valormercado'] if 'valormercado' in data['meta'] else None,
         'max_52_weeks': lambda: data['meta']['max_52_semanas'] if 'max_52_semanas' in data['meta'] else None,
+        'mayer_multiple': lambda: None,
         'min_52_weeks': lambda: data['meta']['min_52_semanas'] if 'min_52_semanas' in data['meta'] else None,
         'name': lambda: data['meta']['name'] if 'name' in data['meta'] else None,
         'net_equity_value': lambda: data['meta']['patrimonio'] if 'patrimonio' in data['meta'] else None,
@@ -757,9 +759,7 @@ def convert_fiis_data(data, info_names):
         'type': lambda: data['meta']['setor_atuacao'] if 'setor_atuacao' in data['meta'] else None,
         'vacancy': lambda: data['meta']['vacancia'] if 'vacancia' in data['meta'] else None,
         'variation_12m': lambda: data['meta']['valorizacao_12_meses'] if 'valorizacao_12_meses' in data['meta'] else None,
-        'variation_30d': lambda: data['meta']['valorizacao_mes'] if 'valorizacao_mes' in data['meta'] else None,
-        'avg_price': lambda: None,
-        'mayer_multiple': lambda: None
+        'variation_30d': lambda: data['meta']['valorizacao_mes'] if 'valorizacao_mes' in data['meta'] else None
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names }
@@ -801,6 +801,7 @@ def convert_fundsexplorer_data(data, info_names):
     ALL_INFO = {
         'actuation': lambda: data['category'][0] if 'valor' in data['meta'] else None,
         'assets_value': lambda: None,
+        'avg_price': lambda: None,
         'cash_value': lambda: data['meta']['valor_caixa'] if 'gestao' in data['meta'] else None,
         'debit_by_real_state_acquisition': lambda: None,
         'debit_by_securitization_receivables_acquisition': lambda: None,
@@ -815,6 +816,7 @@ def convert_fundsexplorer_data(data, info_names):
         'management': lambda: data['meta']['gestao'] if 'valor_caixa' in data['meta'] else None,
         'market_value': lambda: data['meta']['valormercado'] if 'valormercado' in data['meta'] else None,
         'max_52_weeks': lambda: data['meta']['max_52_semanas'] if 'max_52_semanas' in data['meta'] else None,
+        'mayer_multiple': lambda: None,
         'min_52_weeks': lambda: data['meta']['min_52_semanas'] if 'min_52_semanas' in data['meta'] else None,
         'name': lambda: data['meta']['name'] if 'name' in data['meta'] else None,
         'net_equity_value': lambda: data['meta']['patrimonio'] if 'patrimonio' in data['meta'] else None,
@@ -833,9 +835,7 @@ def convert_fundsexplorer_data(data, info_names):
         'type': lambda: data['meta']['setor_atuacao'] if 'setor_atuacao' in data['meta'] else None,
         'vacancy': lambda: data['meta']['vacancia'] if 'vacancia' in data['meta'] else None,
         'variation_12m': lambda: data['meta']['valorizacao_12_meses'] if 'valorizacao_12_meses' in data['meta'] else None,
-        'variation_30d': lambda: data['meta']['valorizacao_mes'] if 'valorizacao_mes' in data['meta'] else None,
-        'avg_price': lambda: None,
-        'mayer_multiple': lambda: None
+        'variation_30d': lambda: data['meta']['valorizacao_mes'] if 'valorizacao_mes' in data['meta'] else None
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names }
@@ -897,6 +897,7 @@ def convert_investidor10_data(data, info_names):
     ALL_INFO = {
         'actuation': lambda: None,
         'assets_value': lambda: None,
+        'avg_price': lambda: None,
         'cash_value': lambda: None,
         'debit_by_real_state_acquisition': lambda: None,
         'debit_by_securitization_receivables_acquisition': lambda: None,
@@ -911,6 +912,7 @@ def convert_investidor10_data(data, info_names):
         'management': lambda: get_substring(data, 'TIPO DE GESTÃO', '<div class=\'cell\'>', patterns_to_remove),
         'market_value': lambda: None,
         'max_52_weeks': lambda: None,
+        'mayer_multiple': lambda: None,
         'min_52_weeks': lambda: None,
         'name': lambda: get_substring(data, 'Razão Social', '<div class=\'cell\'>', patterns_to_remove),
         'net_equity_value': lambda: multiply_by_unit(get_substring(data, 'VALOR PATRIMONIAL</span>', '</span>', patterns_to_remove)),
@@ -929,9 +931,7 @@ def convert_investidor10_data(data, info_names):
         'type': lambda: get_substring(data, 'TIPO DE FUNDO', '<div class=\'cell\'>', patterns_to_remove),
         'vacancy': lambda: text_to_number(get_substring(data, 'VACÂNCIA', '<div class=\'cell\'>', patterns_to_remove)),
         'variation_12m': lambda: text_to_number(get_substring(data, 'title="Variação (12M)">VARIAÇÃO (12M)</span>', '</span>', patterns_to_remove)),
-        'variation_30d': lambda: None,
-        'avg_price': lambda: None,
-        'mayer_multiple': lambda: None
+        'variation_30d': lambda: None
     }
 
     final_data = { info: ALL_INFO[info]() for info in info_names }
