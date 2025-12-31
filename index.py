@@ -540,7 +540,7 @@ def get_data_from_bmfbovespa(ticker, info_names):
         log_error(f'Error fetching BM & FBovespa data for "{ticker}": {traceback.format_exc()}')
         return None
 
-def convert_fundamentus_data(data, info_names):
+def convert_fundamentus_data(data, historical_prices, info_names):
     patterns_to_remove = [
         '</font>',
         '</span>',
@@ -557,6 +557,10 @@ def convert_fundamentus_data(data, info_names):
         '<td class="data">'
     ]
 
+    prices = [ price[1] for price in historical_prices[-200:] ]
+    avg_price = sum(prices) / len(prices)
+    last_price = historical_prices[-1][1]
+
     def get_vacancy():
         vacancy_as_text = get_substring(data, 'Vacância Média</span>', '</span>', patterns_to_remove)
         vacancy_as_text = vacancy_as_text.replace('-', '').strip()
@@ -565,7 +569,7 @@ def convert_fundamentus_data(data, info_names):
     ALL_INFO = {
         'actuation': lambda: None,
         'assets_value': lambda: text_to_number(get_substring(data, '>Ativos</span>', '</span>', patterns_to_remove)),
-        'avg_price': lambda: None,
+        'avg_price': lambda: avg_price,
         'cash_value': lambda: text_to_number(get_substring(data, 'Caixa\'', ']', [', data : ['])),
         'debit_by_real_state_acquisition': lambda: None,
         'debit_by_securitization_receivables_acquisition': lambda: None,
@@ -580,11 +584,14 @@ def convert_fundamentus_data(data, info_names):
         'management': lambda: get_substring(data, 'Gestão</span>', '</span>', patterns_to_remove),
         'market_value': lambda: text_to_number(get_substring(data, 'Valor de mercado</span>', '</span>', patterns_to_remove)),
         'max_52_weeks': lambda: text_to_number(get_substring(data, 'Max 52 sem</span>', '</span>', patterns_to_remove)),
-        'mayer_multiple': lambda: None,
+        #'max_52_weeks': lambda: max(prices),
+        'mayer_multiple': lambda: last_price / avg_price,
         'min_52_weeks': lambda: text_to_number(get_substring(data, 'Min 52 sem</span>', '</span>', patterns_to_remove)),
+        #'min_52_weeks': lambda: min(prices),
         'name': lambda: get_substring(data, 'Nome</span>', '</span>', patterns_to_remove),
         'net_equity_value': lambda: text_to_number(get_substring(data, 'Patrim Líquido</span>', '</span>', patterns_to_remove)),
         'price': lambda: text_to_number(get_substring(data, 'Cotação</span>', '</span>', patterns_to_remove)),
+        #'price': lambda: last_price,
         'pvp': lambda: text_to_number(get_substring(data, 'P/VP</span>', '</span>', patterns_to_remove)),
         'segment': lambda: get_substring(data, 'Mandato</span>', '</span>', patterns_to_remove),
         'target_public': lambda: None,
@@ -609,115 +616,36 @@ def convert_fundamentus_data(data, info_names):
 def get_data_from_fundamentus(ticker, info_names):
     global fundamentus_preloaded_data
 
-    try:
-        if fundamentus_preloaded_data[1] and ticker == fundamentus_preloaded_data[0]:
-            converted_data = convert_fundamentus_data(fundamentus_preloaded_data[1], info_names)
-            log_debug(f'Converted preloaded Fundamentus data: {converted_data}')
-            return converted_data
+    headers = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Origin': 'https://fundamentus.com.br/index.php',
+        'Referer': 'https://fundamentus.com.br/index.php',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 OPR/113.0.0.0'
+    }
 
-        headers = {
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Origin': 'https://fundamentus.com.br/index.php',
-            'Referer': 'https://fundamentus.com.br/index.php',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 OPR/113.0.0.0'
-        }
+    def get_fundamentus_html_page():
+        if fundamentus_preloaded_data[1] and ticker == fundamentus_preloaded_data[0]:
+            log_debug(f'Using preloaded Fundamentus data')
+            return fundamentus_preloaded_data[1]
 
         response = request_get(f'https://fundamentus.com.br/detalhes.php?papel={ticker}', headers)
         html_page = response.text
 
-        if 'Nenhum papel encontrado' in html_page:
-            log_error(f'No data found on Fundamentus data for "{ticker}"')
-            return None
+        log_debug(f'Using fresh Fundamentus data')
+        return html_page
 
-        converted_data = convert_fundamentus_data(html_page, info_names)
+    def get_fundamentus_historical_prices():
+        response = request_get(f'https://www.fundamentus.com.br/amline/cot_hist.php?papel={ticker}', headers)
+        historical_prices = response.json()
+        return historical_prices
+
+    try:
+        converted_data = convert_fundamentus_data(get_fundamentus_html_page(), get_fundamentus_historical_prices(), info_names)
         log_debug(f'Converted fresh Fundamentus data: {converted_data}')
         return converted_data
     except:
         log_error(f'Error fetching Fundamentus data for "{ticker}": {traceback.format_exc()}')
-        return None
-
-def convert_infomoney_data(data, info_names):
-    prices = [ text_to_number(price[2]) for price in data ]
-    price = text_to_number(prices[0])
-    avg_price = sum(prices) / len(prices)
-
-    ALL_INFO = {
-        'actuation': lambda: None,
-        'assets_value': lambda: None,
-        'avg_price': lambda: avg_price,
-        'cash_value': lambda: None,
-        'debit_by_real_state_acquisition': lambda: None,
-        'debit_by_securitization_receivables_acquisition': lambda: None,
-        'dy': lambda: None,
-        'equity_price': lambda: None,
-        'ffoy': lambda: None,
-        'initial_date': lambda: None,
-        'latest_dividend': lambda: None,
-        'latests_dividends': lambda: None,
-        'link': lambda: f'https://fnet.bmfbovespa.com.br/fnet/publico/abrirGerenciadorDocumentosCVM?cnpjFundo={data["meta"]["cnpj"]}#',
-        'liquidity': lambda: None,
-        'management': lambda: None,
-        'market_value': lambda: None,
-        'max_52_weeks': lambda: max(prices),
-        'mayer_multiple': lambda: price / avg_price,
-        'min_52_weeks': lambda: min(prices),
-        'name': lambda: None,
-        'net_equity_value': lambda: None,
-        'price': lambda: price,
-        'pvp': lambda: None,
-        'segment': lambda: None,
-        'target_public': lambda: None,
-        'term': lambda: None,
-        'total_issued_shares': lambda: None,
-        'total_mortgage': lambda: None,
-        'total_mortgage_value': lambda: None,
-        'total_real_state': lambda: None,
-        'total_real_state_value': lambda: None,
-        'total_stocks_fund_others': lambda: None,
-        'total_stocks_fund_others_value': lambda: None,
-        'type': lambda: None,
-        'vacancy': lambda: None,
-        'variation_12m': lambda: None,
-        'variation_30d': lambda: None
-    }
-
-    final_data = { info: ALL_INFO[info]() for info in info_names }
-
-    return final_data
-
-def get_data_from_infomoney(ticker, info_names):
-    try:
-        headers = {
-            'accept': 'application/json, text/javascript, */*; q=0.01',
-            'accept-language': 'pt-BR,pt;q=0.9,en;q=0.8,ko;q=0.7',
-            'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'dnt': '1',
-            'origin': 'https://www.infomoney.com.br',
-            'priority': 'u=1, i',
-            'referer': 'https://www.infomoney.com.br/cotacoes/b3/acao/banco-do-brasil-bbas3/historico/',
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 OPR/120.0.0.0',
-            'x-requested-with': 'XMLHttpRequest'
-        }
-
-        base_url = 'https://www.infomoney.com.br/wp-json/infomoney/v1/quotes/history'
-
-        today = datetime.now()
-        today_day_month = f'{today.day if today.day >= 10 else f"0{today.day}"}%2F{today.month if today.month >= 10 else f"0{today.month}"}'
-
-        past_200_days = today - timedelta(days=365)
-        past_200_days_day_month = f'{past_200_days.day if past_200_days.day >= 10 else f"0{past_200_days.day}"}%2F{past_200_days.month if past_200_days.month >= 10 else f"0{past_200_days.month}"}'
-
-        form_data = f'page=0&numberItems=200&initialDate={past_200_days_day_month}%2F{past_200_days.year}&finalDate={today_day_month}%2F{today.year}&symbol={ticker}'
-
-        response = request_post(base_url, headers=headers, data=form_data)
-        prices = response.json()
-
-        converted_data = convert_infomoney_data(prices, info_names)
-        log_debug(f'Converted fresh InfoMoney data: {converted_data}')
-        return converted_data
-    except:
-        log_error(f'Error fetching InfoMoney data for "{ticker}": {traceback.format_exc()}')
         return None
 
 def convert_fiis_data(data, info_names):
@@ -1009,20 +937,11 @@ def get_data_from_all_sources(ticker, info_names):
     if combined_data and not missing_combined_infos:
         return combined_data
 
-    data_infomoney = get_data_from_infomoney(ticker, missing_combined_infos or info_names)
-    log_info(f'Data from InfoMoney: {data_infomoney}')
-
-    combined_data, missing_combined_infos = combine_data(combined_data, data_infomoney, info_names)
-    log_debug(f'Missing info from BM & FBovespa, Fundamentus or InfoMoney: {missing_combined_infos}')
-
-    if combined_data and not missing_combined_infos:
-        return combined_data
-
     data_fiis = get_data_from_fiis(ticker, missing_combined_infos or info_names)
     log_info(f'Data from FIIs: {data_fiis}')
 
     combined_data, missing_combined_infos = combine_data(combined_data, data_fiis, info_names)
-    log_debug(f'Missing info from BM & FBovespa, Fundamentus, InfoMoney or FIIs: {missing_combined_infos}')
+    log_debug(f'Missing info from BM & FBovespa, Fundamentus or FIIs: {missing_combined_infos}')
 
     if combined_data and not missing_combined_infos:
         return combined_data
@@ -1041,7 +960,6 @@ def get_data_from_sources(ticker, source, info_names):
         VALID_SOURCES['FIIS_SOURCE']: get_data_from_fiis,
         VALID_SOURCES['FUNDAMENTUS_SOURCE']: get_data_from_fundamentus,
         VALID_SOURCES['FUNDSEXPLORER_SOURCE']: get_data_from_fundsexplorer,
-        VALID_SOURCES['INFOMONEY_SOURCE']: get_data_from_infomoney,
         VALID_SOURCES['INVESTIDOR10_SOURCE']: get_data_from_investidor10
     }
 
