@@ -29,7 +29,6 @@ VALID_SOURCES = {
     'FIIS_SOURCE': 'fiis',
     'FUNDAMENTUS_SOURCE': 'fundamentus',
     'FUNDSEXPLORER_SOURCE': 'fundsexplorer',
-    'INFOMONEY_SOURCE': 'infomoney',
     'INVESTIDOR10_SOURCE': 'investidor10'
 }
 
@@ -247,14 +246,6 @@ def request_get(url, headers=None):
 
     return response
 
-def request_post(url, headers=None, data=None):
-    response = requests.post(url, headers=headers, data=data)
-    response.raise_for_status()
-
-    log_debug(f'Response from {url} : {response}')
-
-    return response
-
 def convert_bmfbovespa_data(IME_doc, ITE_doc, RA_docs, cnpj, info_names):
     patterns_to_remove = [
         '</b>',
@@ -385,7 +376,7 @@ def fetch_documents(cnpj, document_configs, info_selector=None):
 
         return final_documents
     except:
-        log_error(f'Error fetching all {document_configs["type"]} document for CNPJ {cnpj}: {traceback.format_exc()}')
+        log_error(f'Error fetching all {document_configs["type"]} document for {cnpj}: {traceback.format_exc()}')
         return None
 
 def get_informe_mensal_estruturado_docs(cnpj):
@@ -453,7 +444,7 @@ def get_cnpj_from_investidor10(ticker):
         return cnpj
     except:
         investidor_10_preloaded_data = (None, None)
-        log_error(f'Error fetching CNPJ on Investidor 10 "{ticker}": {traceback.format_exc()}')
+        log_error(f'Error fetching CNPJ on Investidor 10 for "{ticker}": {traceback.format_exc()}')
         return None
 
 def get_cnpj_from_fiis(ticker):
@@ -479,7 +470,7 @@ def get_cnpj_from_fiis(ticker):
         return cnpj
     except:
         fiis_preloaded_data = (None, None)
-        log_error(f'Error fetching CNPJ on FIIs "{ticker}": {traceback.format_exc()}')
+        log_error(f'Error fetching CNPJ on FIIs for "{ticker}": {traceback.format_exc()}')
         return None
 
 def get_cnpj_from_fundamentus(ticker):
@@ -537,7 +528,7 @@ def get_data_from_bmfbovespa(ticker, info_names):
         log_debug(f'Converted BM & FBovespa data: {converted_data}')
         return converted_data
     except:
-        log_error(f'Error fetching BM & FBovespa data for "{ticker}": {traceback.format_exc()}')
+        log_error(f'Error fetching data on BM & FBovespa for "{ticker}": {traceback.format_exc()}')
         return None
 
 def convert_fundamentus_data(data, historical_prices, info_names):
@@ -642,10 +633,10 @@ def get_data_from_fundamentus(ticker, info_names):
 
     try:
         converted_data = convert_fundamentus_data(get_fundamentus_html_page(), get_fundamentus_historical_prices(), info_names)
-        log_debug(f'Converted fresh Fundamentus data: {converted_data}')
+        log_debug(f'Converted Fundamentus data: {converted_data}')
         return converted_data
     except:
-        log_error(f'Error fetching Fundamentus data for "{ticker}": {traceback.format_exc()}')
+        log_error(f'Error fetching data on Fundamentus for "{ticker}": {traceback.format_exc()}')
         return None
 
 def convert_fiis_data(data, info_names):
@@ -721,7 +712,7 @@ def get_data_from_fiis(ticker, info_names):
         log_debug(f'Converted fresh FIIs data: {converted_data}')
         return converted_data
     except:
-        log_error(f'Error fetching FIIs data for "{ticker}": {traceback.format_exc()}')
+        log_error(f'Error fetching data on FIIs for "{ticker}": {traceback.format_exc()}')
         return None
 
 def convert_fundsexplorer_data(data, info_names):
@@ -791,7 +782,7 @@ def get_data_from_fundsexplorer(ticker, info_names):
         log_debug(f'Converted Fundsexplorer: {converted_data}')
         return converted_data
     except:
-        log_error(f'Error fetching data from Fundsexplorer for "{ticker}": {traceback.format_exc()}')
+        log_error(f'Error fetching data on Fundsexplorer for "{ticker}": {traceback.format_exc()}')
         return None
 
 def convert_investidor10_data(data, info_names):
@@ -889,7 +880,7 @@ def get_data_from_investidor10(ticker, info_names):
         log_debug(f'Converted fresh Investidor 10 data: {converted_data}')
         return converted_data
     except:
-        log_error(f'Error fetching data from Investidor 10 for "{ticker}": {traceback.format_exc()}')
+        log_error(f'Error fetching data on Investidor 10 for "{ticker}": {traceback.format_exc()}')
         return None
 
 def filter_remaining_infos(data, info_names, default_info_names=None):
